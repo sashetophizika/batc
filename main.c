@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -24,32 +25,38 @@ int LIVE = 0;
 int MINIMAL = 0;
 int SMALL = 0;
 int DIGITS = 0;
-int FAT = 1;
-int ALT_CHARGE = 1;
+int FAT = 0;
+int ALT_CHARGE = 0;
 int EXTRA_COLORS = 1;
 char MODE = 'c';
-char *BAT_NUMBER = "/sys/class/power_supply/BAT0";
+char BAT_NUMBER[50];
 
 int NEWL = 0;
 int INDENT = 0;
 int ROWS = 0;
 int COLS = 0;
 
+int PREVIOUS_BAT = 0;
+int PREVIOUS_TEMP = 0;
+int PREVIOUS_POWER = 0;
+int PREVIOUS_CHARGING = 1;
+
 int BAT = 0;
 int TEMP = 0;
 int POWER = 0;
-int CHARGING = 1;
+int CHARGING = 0;
+
 int REDRAW = 0;
 int BLOCKS = 0;
 int FULL_COLS = 0;
 
 char POLARITY = '-';
-char *OLD_COLOR = "";
 char *BATTERY_COLOR = "";
+char *PREVIOUS_BATTERY_COLOR = "";
 
-int OLD_NUM_LENGTH = 0;
-int OLD_BLOCKS = 0;
-int OLD_INDEX = 0;
+int PREVIOUS_NUM_LENGTH = 0;
+int PREVIOUS_BLOCKS = 0;
+int PREVIOUS_INDEX = 0;
 
 void toggle(int *x) {
   if (*x)
@@ -58,7 +65,17 @@ void toggle(int *x) {
     *x = 1;
 }
 
-void hex_to_ansi(char **color) {
+int digit_count(int num) {
+  int count = 0;
+  do {
+    num /= 10;
+    count++;
+  } while (num != 0);
+
+  return count;
+}
+
+void color_to_ansi(char **color) {
   if (strcmp(*color, "none") == 0)
     *color = "\e[0m\0";
   else if (strcmp(*color, "black") == 0)
@@ -99,6 +116,9 @@ char *get_param(char *param) {
   char fn[100];
   snprintf(fn, 100, "%s/%s", BAT_NUMBER, param);
 
+  if (!strcmp(param, "capacity"))
+    strcpy(fn, "/home/sasho/testbat/capacity");
+
   fp = fopen(fn, "r");
   if (fp == NULL) {
     return "0";
@@ -110,15 +130,20 @@ char *get_param(char *param) {
   return line;
 }
 
-void bat_status() {
+void bat_status(int full) {
+  PREVIOUS_BAT = BAT;
+  PREVIOUS_TEMP = TEMP;
+  PREVIOUS_POWER = POWER;
+  PREVIOUS_CHARGING = CHARGING;
+
   BAT = atoi(get_param("capacity"));
   char *status = get_param("status");
 
-  if (MODE == 't') {
+  if (MODE == 't' || full) {
     TEMP = atoi(get_param("temp")) / 10;
   }
 
-  if (!strcmp(status, "Discharging") || !strcmp(status, "Not charging")) {
+  if (!strcmp(status, "Discharging\n") || !strcmp(status, "Not charging\n")) {
     CHARGING = 0;
     POLARITY = '-';
   } else {
@@ -126,7 +151,7 @@ void bat_status() {
     POLARITY = '+';
   }
 
-  if (MODE == 'm') {
+  if (MODE == 'm' || full) {
     int charge_now = atoi(get_param("charge_now"));
     int charge_full = atoi(get_param("charge_full"));
     int current_now = atoi(get_param("current_now"));
@@ -154,7 +179,6 @@ void update_state() {
   switch (MODE) {
   case 'c':
     data = BAT;
-
     break;
   case 'm':
     data = POWER;
@@ -175,6 +199,14 @@ void update_state() {
 
   if (COLORS == 0)
     BATTERY_COLOR = "\e[0m";
+
+  if (PREVIOUS_NUM_LENGTH != digit_count(data))
+    REDRAW = 0;
+  PREVIOUS_NUM_LENGTH = digit_count(data);
+
+  if (BATTERY_COLOR != PREVIOUS_BATTERY_COLOR)
+    REDRAW = 0;
+  PREVIOUS_BATTERY_COLOR = BATTERY_COLOR;
 }
 
 void print_digit(int digit, int row, int col, int negate) {
@@ -338,19 +370,9 @@ void print_digit(int digit, int row, int col, int negate) {
   }
 }
 
-int digit_count(int num) {
-  int count = 0;
-  while (num != 0) {
-    num /= 10;
-    count++;
-  }
-  return count;
-}
-
 void print_number(int row) {
   int data;
   switch (MODE) {
-
   case 'c':
     data = BAT;
     break;
@@ -453,6 +475,46 @@ void print_charge() {
   printf("%s", symbol);
 }
 
+void print_col(int rows) {
+  int diff = BLOCKS - PREVIOUS_BLOCKS;
+  int step;
+  int start;
+  int end;
+  char *new_sym;
+
+  if (diff > 0) {
+    step = 1;
+    end = diff + 1;
+    start = 1;
+    new_sym = "█";
+  } else {
+    step = -1;
+    start = 0;
+    end = diff;
+    new_sym = " ";
+  }
+
+  printf("\e[7;0H%d", BLOCKS);
+  printf("\e[8;0H%d", PREVIOUS_BLOCKS);
+  printf("\e[9;0H%d", diff);
+  printf("\e[10;0H%d", start);
+  printf("\e[11;0H%d", end);
+  printf("\e[12;0H%d", step);
+
+  for (int i = start; step * i < step * end; i += step) {
+    int index = INDENT + PREVIOUS_BLOCKS + 2 + i;
+    char col[100];
+    snprintf(col, 100, "%s\e[%d;%dH", BATTERY_COLOR, NEWL + 1, index);
+
+    for (int j = 0; j < rows; j++) {
+      char buffer[20];
+      snprintf(buffer, 20, "%s\e[1B\e[1D", new_sym);
+      strcat(col, buffer);
+    }
+    printf("%s\r\n", col);
+  }
+}
+
 void print_bat() {
   int core_rows;
   int cap[8];
@@ -469,16 +531,16 @@ void print_bat() {
     char *block_string = "█████████████████████████████████████\0";
     char *empty_string = "                                     \0";
     char fill[150];
-    char empty[35];
+    char empty[50];
     char cap_size[200];
 
     printf("\033[%d;%dH%s████████████████████████████████████████\n", NEWL,
            INDENT, COLOR_SHELL);
 
     strncpy(fill, block_string, (BLOCKS + 1) * 3);
-    fill[BLOCKS * 3 + 4] = '\0';
+    fill[(BLOCKS + 1) * 3] = '\0';
     strncpy(empty, empty_string, 33 - BLOCKS);
-    empty[34 - BLOCKS] = '\0';
+    empty[33 - BLOCKS] = '\0';
 
     for (int i = 1; i <= core_rows; i++) {
       memset(cap_size, 0, sizeof(cap_size));
@@ -492,7 +554,12 @@ void print_bat() {
     printf("\033[%d;%dH%s████████████████████████████████████████\n",
            NEWL + core_rows + 1, INDENT, COLOR_SHELL);
 
+    PREVIOUS_BLOCKS = BLOCKS;
     REDRAW = 1;
+  } else {
+    if (BLOCKS != PREVIOUS_BLOCKS)
+      print_col(core_rows);
+    PREVIOUS_BLOCKS = BLOCKS;
   }
 }
 
@@ -511,35 +578,104 @@ void big_loop(int opt) {
   update_state();
   print_bat();
   print_charge();
-  print_number(NEWL + 2);
+
+  if (DIGITS)
+    print_number(NEWL + 2);
+  printf("\r\n");
 }
 
-void main_loop(int opt) { big_loop(opt); }
+void print_small_bat_row() {
+  BLOCKS = BAT / 7;
+  int i = 0;
+
+  printf("%s██%s", COLOR_SHELL, BATTERY_COLOR);
+  while (i < 14) {
+    if (i < BLOCKS)
+      printf("█");
+    else
+      printf(" ");
+
+    i++;
+  }
+  printf("%s████▊", COLOR_SHELL);
+}
+
+void print_small_bat() {
+  printf("\n%s███████████████████\r\n", COLOR_SHELL);
+
+  print_small_bat_row();
+
+  if (CHARGING)
+    printf("   %s▄▄▄\r\n", COLOR_CHARGE);
+  else
+    printf("               \r\n");
+
+  print_small_bat_row();
+
+  if (CHARGING)
+    printf("  %s▀▀▀\r\n", COLOR_CHARGE);
+  else
+    printf("            \r\n");
+
+  printf("%s███████████████████\n", COLOR_SHELL);
+}
+
+void small_loop() {
+  update_state();
+  print_small_bat();
+  printf("\e[5F");
+}
+
+void main_loop(int opt) {
+  if (SMALL)
+    small_loop();
+  else
+    big_loop(opt);
+}
 
 int handle_input(char c) {
   switch (c) {
-  case 'b':
-    bat_status();
+  case 'd':
+    toggle(&DIGITS);
+    bat_status(0);
+    main_loop(0);
     break;
   case 'f':
     toggle(&FAT);
-    big_loop(0);
-    break;
-  case 'a':
-    toggle(&ALT_CHARGE);
-    big_loop(0);
+    REDRAW = 0;
+    bat_status(0);
+    main_loop(1);
     break;
   case 'c':
-    toggle(&CHARGING);
-    big_loop(0);
+    toggle(&ALT_CHARGE);
+    bat_status(0);
+    print_charge();
     break;
-  case 'p':
-    printf("%d\n", BAT);
-    printf("%d\n", TEMP);
-    printf("%d\n", POWER);
-    printf("%d\n", CHARGING);
+  case 't':
+    if (MODE == 'c')
+      MODE = 't';
+    else if (MODE == 't')
+      MODE = 'm';
+    else if (MODE == 'm')
+      MODE = 'c';
+    REDRAW = 0;
+    bat_status(0);
+    main_loop(0);
     break;
+  case 'a': {
+    char b[100];
+    snprintf(b, 100, "echo %d > ~/testbat/capacity", BAT - 1);
+    system(b);
+    break;
+  }
+  case 's': {
+    char b[100];
+    snprintf(b, 100, "echo %d > ~/testbat/capacity", BAT + 1);
+    system(b);
+    break;
+  }
   case 'q':
+  case 27:
     exit(0);
   }
   return 1;
@@ -554,35 +690,164 @@ void *event_loop() {
   return NULL;
 }
 
+void print_help() {
+  puts("Usage:\r\n"
+       "  battery [-lsmbdfn]\r\n"
+       "\r\n"
+       "OPTIONS\r\n"
+       "  -l              Monitor the battery live\r\n"
+       "  -s              Print a small version of the battery\r\n"
+       "  -f              Draws a slightly thicker battery\r\n"
+       "  -d              Prints the current capacity as a number in the "
+       "battery\r\n"
+       "  -p MODE         Specify the mode to be printed with -d (c for "
+       "capacity, m for time, t for temperature)\r\n"
+       "  -e              Disable extra core color patterns for different "
+       "modes\r\n"
+       "  -m              Minimal print of the battery status\r\n"
+       "  -c              Use alternate charging symbol (requires nerd "
+       "fonts)\r\n"
+       "  -n              Disable colors\r\n"
+       "  -b BAT_NUMBER   Specify battery number");
+}
+
+void handle_flags(int argc, char **argv) {
+  char opt;
+  while ((opt = getopt(argc, argv, ":hnlmtp:csdfb:")) != -1) {
+    switch (opt) {
+    case 'n':
+      toggle(&COLORS);
+      break;
+    case 'l':
+      toggle(&LIVE);
+      break;
+    case 'm':
+      toggle(&MINIMAL);
+      break;
+    case 's':
+      toggle(&SMALL);
+      break;
+    case 'd':
+      toggle(&DIGITS);
+      break;
+    case 'f':
+      toggle(&FAT);
+      break;
+    case 'c':
+      toggle(&ALT_CHARGE);
+      break;
+    case 'e':
+      toggle(&EXTRA_COLORS);
+      break;
+    case 'p':
+      MODE = optarg[0];
+      break;
+    case 'b': {
+      char buffer[50];
+      sprintf(buffer, "/sys/class/power_supply/BAT%s", optarg);
+      strcpy(BAT_NUMBER, buffer);
+    } break;
+    case 'h':
+      print_help();
+      exit(0);
+    }
+  }
+}
+
+void parse_config() {}
+
 void cleanup() {
   system("/bin/stty cooked");
   system("/bin/stty echo");
+  if (SMALL) {
+    printf("\e[?25h\e[5B");
+  } else {
+
+    if (LIVE) {
+      printf("\e[?25h\e[?47l\e[u");
+    } else {
+      struct winsize w;
+      ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+      char buffer[20];
+      printf("\e[?25h\e[%d;0H", w.ws_row);
+    }
+  }
 }
 
-int main() {
+void setup() {
   system("/bin/stty raw");
   system("/bin/stty -echo");
+  printf("\e[?25l");
+
+  if (LIVE && !SMALL)
+    printf("\e[?47h\e[s");
+
+  strcpy(BAT_NUMBER, "/sys/class/power_supply/BAT0");
+
+  parse_config();
+  color_to_ansi(&COLOR_100P);
+  color_to_ansi(&COLOR_60P);
+  color_to_ansi(&COLOR_20P);
+  color_to_ansi(&COLOR_TEMP);
+  color_to_ansi(&COLOR_TIME_FULL);
+  color_to_ansi(&COLOR_TIME_LEFT);
+  color_to_ansi(&COLOR_CHARGE);
+  color_to_ansi(&COLOR_SHELL);
+
+  if (!COLORS) {
+    COLOR_SHELL = "\e[0m";
+    COLOR_CHARGE = "\e[0m";
+  }
+}
+
+void minimal() {
+  bat_status(1);
+  printf("Battery: %d%%\r\n", BAT);
+  printf("Temperature: %d°\r\n", TEMP);
+  if (CHARGING)
+    printf("Time to Full: %dh %dm\r\nCharging: True\r\n", POWER / 60,
+           POWER % 60);
+  else
+    printf("Time Left: %dh %dm\r\nCharging: False\r\n", POWER / 60, POWER % 60);
+  exit(0);
+}
+
+int main(int argc, char **argv) {
+  handle_flags(argc, argv);
+
+  setup();
   atexit(cleanup);
 
-  char c = '0';
-  bat_status();
+  if (MINIMAL) {
+    minimal();
+  }
+
+  bat_status(0);
   main_loop(1);
-  pthread_t thread;
-  pthread_create(&thread, NULL, event_loop, NULL);
 
   struct winsize w;
+  if (LIVE) {
+    pthread_t thread;
+    pthread_create(&thread, NULL, event_loop, NULL);
 
-  while (1) {
-    bat_status();
-    if (!SMALL) {
-      switch (MODE) {
+    while (1) {
+      usleep(100000);
+      bat_status(0);
 
-      case 't':
+      if (!SMALL) {
+        switch (MODE) {
+        case 't':
+          if (PREVIOUS_TEMP != TEMP)
+            main_loop(0);
+          break;
+        case 'm':
+          if (PREVIOUS_POWER != POWER)
+            main_loop(0);
+          break;
+        }
+      }
+      if (PREVIOUS_BAT != BAT || PREVIOUS_CHARGING != CHARGING) {
         main_loop(0);
-        break;
-      case 'm':
-        main_loop(0);
-        break;
       }
 
       ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
