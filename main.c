@@ -1,4 +1,5 @@
 #include <complex.h>
+#include <getopt.h>
 #include <locale.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -48,7 +49,6 @@ int CHARGING = 0;
 
 int REDRAW = 0;
 int BLOCKS = 0;
-int FULL_COLS = 0;
 
 char POLARITY = '-';
 char *BATTERY_COLOR = "";
@@ -56,7 +56,6 @@ char *PREVIOUS_BATTERY_COLOR = "";
 
 int PREVIOUS_NUM_LENGTH = 0;
 int PREVIOUS_BLOCKS = 0;
-int PREVIOUS_INDEX = 0;
 
 void toggle(int *x) {
   if (*x)
@@ -75,51 +74,52 @@ int digit_count(int num) {
   return count;
 }
 
-void color_to_ansi(char **color) {
-  if (strcmp(*color, "none") == 0)
-    *color = "\e[0m\0";
-  else if (strcmp(*color, "black") == 0)
-    *color = "\e[0;30m\0";
-  else if (strcmp(*color, "red") == 0)
-    *color = "\e[0;31m\0";
-  else if (strcmp(*color, "green") == 0)
-    *color = "\e[0;32m\0";
-  else if (strcmp(*color, "yellow") == 0)
-    *color = "\e[0;33m\0";
-  else if (strcmp(*color, "blue") == 0)
-    *color = "\e[0;34m\0";
-  else if (strcmp(*color, "magenta") == 0)
-    *color = "\e[0;35m\0";
-  else if (strcmp(*color, "cyan") == 0)
-    *color = "\e[0;36m\0";
-  else if (strcmp(*color, "white") == 0)
-    *color = "\e[0;37m\0";
-  else if (*color[0] == '#') {
+char *color_to_ansi(char *color) {
+  if (strcmp(color, "none\n") == 0)
+    return "\e[0m\0";
+  else if (strcmp(color, "black\n") == 0)
+    return "\e[0;30m\0";
+  else if (strcmp(color, "red\n") == 0)
+    return "\e[0;31m\0";
+  else if (strcmp(color, "green\n") == 0)
+    return "\e[0;32m\0";
+  else if (strcmp(color, "yellow\n") == 0)
+    return "\e[0;33m\0";
+  else if (strcmp(color, "blue\n") == 0)
+    return "\e[0;34m\0";
+  else if (strcmp(color, "magenta\n") == 0)
+    return "\e[0;35m\0";
+  else if (strcmp(color, "cyan\n") == 0)
+    return "\e[0;36m\0";
+  else if (strcmp(color, "white\n") == 0)
+    return "\e[0;37m\0";
+  else if (color[0] == '#') {
     char r[10];
     char g[10];
     char b[10];
-    strncpy(r, *color + 1, 2);
-    strncpy(g, *color + 3, 2);
-    strcpy(b, *color + 5);
+    strncpy(r, color + 1, 2);
+    strncpy(g, color + 3, 2);
+    strcpy(b, color + 5);
 
-    char a[100];
+    char *a = malloc(100);
     sprintf(a, "\e[38;2;%ld;%ld;%ldm", strtol(r, NULL, 16), strtol(g, NULL, 16),
             strtol(b, NULL, 16));
-    *color = a;
+    return a;
   }
+
+  return color;
 }
 
 char *get_param(char *param) {
-  FILE *fp;
   char *line = NULL;
   size_t len = 0;
   char fn[100];
   snprintf(fn, 100, "%s/%s", BAT_NUMBER, param);
 
-  if (!strcmp(param, "capacity"))
-    strcpy(fn, "/home/sasho/testbat/capacity");
+  // if (!strcmp(param, "capacity"))
+  //   strcpy(fn, "/home/sasho/testbat/capacity");
 
-  fp = fopen(fn, "r");
+  FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
     return "0";
   }
@@ -164,7 +164,6 @@ void bat_status(int full) {
   }
 
   BLOCKS = BAT / 3;
-  FULL_COLS = BAT / 3 + 4;
 }
 
 void update_state() {
@@ -384,20 +383,22 @@ void print_number(int row) {
     break;
   }
 
+  int full_cols = BLOCKS + 4;
   int blocks1 = 0;
   int blocks2 = 0;
   int blocks3 = 0;
+
   switch (digit_count(data)) {
   case 1:
-    if (FULL_COLS > 16)
-      blocks1 = FULL_COLS - 17;
+    if (full_cols > 16)
+      blocks1 = full_cols - 17;
     print_digit(data, row, INDENT + 16, blocks1);
     break;
   case 2:
-    if (FULL_COLS > 12) {
-      blocks1 = FULL_COLS - 13;
-      if (FULL_COLS > 20)
-        blocks2 = FULL_COLS - 21;
+    if (full_cols > 12) {
+      blocks1 = full_cols - 13;
+      if (full_cols > 20)
+        blocks2 = full_cols - 21;
     }
 
     print_digit(data / 10, row, INDENT + 12, blocks1);
@@ -405,12 +406,12 @@ void print_number(int row) {
     break;
   case 3:
   default:
-    if (FULL_COLS > 8) {
-      blocks1 = FULL_COLS - 9;
-      if (FULL_COLS > 16) {
-        blocks2 = FULL_COLS - 17;
-        if ((FULL_COLS > 24))
-          blocks3 = FULL_COLS - 25;
+    if (full_cols > 8) {
+      blocks1 = full_cols - 9;
+      if (full_cols > 16) {
+        blocks2 = full_cols - 17;
+        if ((full_cols > 24))
+          blocks3 = full_cols - 25;
       }
     }
 
@@ -637,6 +638,7 @@ int handle_input(char c) {
   switch (c) {
   case 'd':
     toggle(&DIGITS);
+    REDRAW = 0;
     bat_status(0);
     main_loop(0);
     break;
@@ -662,18 +664,18 @@ int handle_input(char c) {
     bat_status(0);
     main_loop(0);
     break;
-  case 'a': {
-    char b[100];
-    snprintf(b, 100, "echo %d > ~/testbat/capacity", BAT - 1);
-    system(b);
-    break;
-  }
-  case 's': {
-    char b[100];
-    snprintf(b, 100, "echo %d > ~/testbat/capacity", BAT + 1);
-    system(b);
-    break;
-  }
+  // case 'a': {
+  //   char b[100];
+  //   snprintf(b, 100, "echo %d > ~/testbat/capacity", BAT - 1);
+  //   system(b);
+  //   break;
+  // }
+  // case 's': {
+  //   char b[100];
+  //   snprintf(b, 100, "echo %d > ~/testbat/capacity", BAT + 1);
+  //   system(b);
+  //   break;
+  // }
   case 'q':
   case 27:
     exit(0);
@@ -695,25 +697,44 @@ void print_help() {
        "  battery [-lsmbdfn]\r\n"
        "\r\n"
        "OPTIONS\r\n"
-       "  -l              Monitor the battery live\r\n"
-       "  -s              Print a small version of the battery\r\n"
-       "  -f              Draws a slightly thicker battery\r\n"
-       "  -d              Prints the current capacity as a number in the "
+       "  -l, --live                       Monitor the battery live\r\n"
+       "  -s, --small                      Print a small version of the "
        "battery\r\n"
-       "  -p MODE         Specify the mode to be printed with -d (c for "
+       "  -f, --fat                        Draws a slightly thicker battery\r\n"
+       "  -d, --digits                     Prints the current capacity as a "
+       "number in the "
+       "battery\r\n"
+       "  -M, --mode MODE                  Specify the mode to be printed with "
+       "-d (c for "
        "capacity, m for time, t for temperature)\r\n"
-       "  -e              Disable extra core color patterns for different "
+       "  -e, --extra-colors               Disable extra core color patterns "
+       "for different "
        "modes\r\n"
-       "  -m              Minimal print of the battery status\r\n"
-       "  -c              Use alternate charging symbol (requires nerd "
+       "  -m, --minimal                    Minimal print of the battery "
+       "status\r\n"
+       "  -c, --alt-charge                 Use alternate charging symbol "
+       "(requires nerd "
        "fonts)\r\n"
-       "  -n              Disable colors\r\n"
-       "  -b BAT_NUMBER   Specify battery number");
+       "  -n, --no-color                   Disable colors\r\n"
+       "  -b, --bat-number BAT_NUMBER      Specify battery number");
 }
 
 void handle_flags(int argc, char **argv) {
+  static struct option long_options[] = {
+      {"mode", required_argument, NULL, 'M'},
+      {"bat-number", required_argument, NULL, 'b'},
+      {"fat", no_argument, NULL, 'f'},
+      {"no-color", no_argument, NULL, 'n'},
+      {"digits", no_argument, NULL, 'd'},
+      {"alt-charge", no_argument, NULL, 'c'},
+      {"live", no_argument, NULL, 'l'},
+      {"minimal", no_argument, NULL, 'm'},
+      {"small", no_argument, NULL, 's'},
+      {"help", no_argument, NULL, 'h'},
+  };
   char opt;
-  while ((opt = getopt(argc, argv, ":hnlmtp:csdfb:")) != -1) {
+  while ((opt = getopt_long(argc, argv, ":hnlmtM:csdfb:", long_options,
+                            NULL)) != -1) {
     switch (opt) {
     case 'n':
       toggle(&COLORS);
@@ -739,7 +760,7 @@ void handle_flags(int argc, char **argv) {
     case 'e':
       toggle(&EXTRA_COLORS);
       break;
-    case 'p':
+    case 'M':
       MODE = optarg[0];
       break;
     case 'b': {
@@ -754,7 +775,72 @@ void handle_flags(int argc, char **argv) {
   }
 }
 
-void parse_config() {}
+int bools_to_int(char *s) {
+  if (!strcmp(s, "true\n")) {
+    return 1;
+  }
+  return 0;
+}
+
+void parse_config() {
+  char fn[100];
+  char *home = getenv("HOME");
+  snprintf(fn, 100, "%s/.config/batc/config", home);
+
+  if (!access(fn, F_OK)) {
+    FILE *fp = fopen(fn, "r");
+    char *line = NULL;
+    size_t len = 0;
+    if (fp == NULL) {
+      return;
+    }
+
+    char *key;
+    char *val;
+    while (getline(&line, &len, fp) != -1) {
+      key = strtok(line, " =");
+      val = strtok(NULL, " =");
+
+      if (key == NULL || val == NULL)
+        continue;
+
+      if (!strcmp(key, "color_100p"))
+        COLOR_100P = color_to_ansi(val);
+      else if (!strcmp(key, "color_60p"))
+        COLOR_60P = color_to_ansi(val);
+      else if (!strcmp(key, "color_20p"))
+        COLOR_20P = color_to_ansi(val);
+      else if (!strcmp(key, "color_charge"))
+        COLOR_CHARGE = color_to_ansi(val);
+      else if (!strcmp(key, "color_shell"))
+        COLOR_SHELL = color_to_ansi(val);
+      else if (!strcmp(key, "color_temp"))
+        COLOR_TEMP = color_to_ansi(val);
+      else if (!strcmp(key, "color_time_full"))
+        COLOR_TIME_FULL = color_to_ansi(val);
+      else if (!strcmp(key, "color_time_left"))
+        COLOR_TIME_LEFT = color_to_ansi(val);
+      else if (!strcmp(key, "colors"))
+        COLORS = bools_to_int(val);
+      else if (!strcmp(key, "live"))
+        LIVE = bools_to_int(val);
+      else if (!strcmp(key, "digits"))
+        DIGITS = bools_to_int(val);
+      else if (!strcmp(key, "fat"))
+        FAT = bools_to_int(val);
+      else if (!strcmp(key, "small"))
+        SMALL = bools_to_int(val);
+      else if (!strcmp(key, "minimal"))
+        MINIMAL = bools_to_int(val);
+      else if (!strcmp(key, "alt_charge"))
+        ALT_CHARGE = bools_to_int(val);
+      else if (!strcmp(key, "extra_colors"))
+        EXTRA_COLORS = bools_to_int(val);
+      else if (!strcmp(key, "mode"))
+        MODE = val[0];
+    }
+  }
+}
 
 void cleanup() {
   system("/bin/stty cooked");
@@ -783,16 +869,7 @@ void setup() {
     printf("\e[?47h\e[s");
 
   strcpy(BAT_NUMBER, "/sys/class/power_supply/BAT0");
-
   parse_config();
-  color_to_ansi(&COLOR_100P);
-  color_to_ansi(&COLOR_60P);
-  color_to_ansi(&COLOR_20P);
-  color_to_ansi(&COLOR_TEMP);
-  color_to_ansi(&COLOR_TIME_FULL);
-  color_to_ansi(&COLOR_TIME_LEFT);
-  color_to_ansi(&COLOR_CHARGE);
-  color_to_ansi(&COLOR_SHELL);
 
   if (!COLORS) {
     COLOR_SHELL = "\e[0m";
@@ -831,7 +908,7 @@ int main(int argc, char **argv) {
     pthread_create(&thread, NULL, event_loop, NULL);
 
     while (1) {
-      usleep(100000);
+      usleep(200000);
       bat_status(0);
 
       if (!SMALL) {

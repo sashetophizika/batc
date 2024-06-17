@@ -17,7 +17,6 @@ git clone https://github.com/sasheto-phizika/batc.git
 cd batc && make
 cp batc ~/.local/bin # user installation
 sudo cp batc /usr/bin # system installation
-
 ```
 
 ## Usage
