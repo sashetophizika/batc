@@ -79,6 +79,13 @@ int digit_count(int num) {
   return count;
 }
 
+int bools_to_int(char *s) {
+  if (!strcmp(s, "true\n")) {
+    return 1;
+  }
+  return 0;
+}
+
 char *color_to_ansi(char *color) {
   if (strcmp(color, "none\n") == 0)
     return "\e[0m\0";
@@ -177,13 +184,16 @@ void bat_status(int full) {
     free(cu);
 
     if (bat.charging == 1) {
-      bat.power = (charge_full - charge_now) * 60 / current_now;
+      bat.power = (charge_full - charge_now) * 60 / (current_now + 1);
     } else {
-      bat.power = charge_now * 60 / current_now;
+      bat.power = charge_now * 60 / (current_now + 1);
     }
   }
 
-  blocks = bat.capacity / 3;
+  if (flags.small)
+    blocks = bat.capacity / 7;
+  else
+    blocks = bat.capacity / 3;
 }
 
 void update_state() {
@@ -366,17 +376,10 @@ void print_digit(int digit, int row, int col, int negate) {
   else {
     char temp[100] = {};
     for (int i = 0; i < 30; i++) {
-      if (i % 6 < negate) {
-        if (chars[i] == '1')
-          printf(" ");
-        else
-          printf("█");
-      } else {
-        if (chars[i] == '1')
-          printf("█");
-        else
-          printf(" ");
-      }
+      if ((i % 6 < negate) != (chars[i] == '1'))
+        printf("█");
+      else
+        printf(" ");
 
       if (i % 6 == 5) {
         printf("\033[%d;%dH", row + (i + 1) / 6, col);
@@ -399,48 +402,32 @@ void print_number(int row) {
     break;
   }
 
-  int full_cols = blocks + 4;
-  int blocks1 = 0;
-  int blocks2 = 0;
-  int blocks3 = 0;
-
   switch (digit_count(data)) {
   case 1:
-    if (full_cols > 16)
-      blocks1 = full_cols - 17;
-    print_digit(data, row, indent + 16, blocks1);
+    print_digit(data, row, indent + 16, blocks - 13);
     break;
   case 2:
-    if (full_cols > 12) {
-      blocks1 = full_cols - 13;
-      if (full_cols > 20)
-        blocks2 = full_cols - 21;
-    }
-
-    print_digit(data / 10, row, indent + 12, blocks1);
-    print_digit(data % 10, row, indent + 20, blocks2);
+    print_digit(data / 10, row, indent + 12, blocks - 9);
+    print_digit(data % 10, row, indent + 20, blocks - 17);
     break;
   case 3:
   default:
-    if (full_cols > 8) {
-      blocks1 = full_cols - 9;
-      if (full_cols > 16) {
-        blocks2 = full_cols - 17;
-        if ((full_cols > 24))
-          blocks3 = full_cols - 25;
-      }
-    }
-
-    print_digit(data % 1000 / 100, row, indent + 8, blocks1);
-    print_digit(data % 100 / 10, row, indent + 16, blocks2);
-    print_digit(data % 10, row, indent + 24, blocks3);
+    print_digit(data % 1000 / 100, row, indent + 8, blocks - 5);
+    print_digit(data % 100 / 10, row, indent + 16, blocks - 13);
+    print_digit(data % 10, row, indent + 24, blocks - 21);
     break;
   }
 }
 
 void print_charge() {
   if (flags.fat) {
-    if (bat.charging) {
+    if (!bat.charging) {
+      printf("\033[%d;%dH                \033[%d;%dH         "
+             " "
+             "\033[%d;%dH           ",
+             newl + 3, indent + 47, newl + 4, indent + 47, newl + 5,
+             indent + 47);
+    } else {
       if (flags.alt_charge) {
         printf("\033[%d;%dH   %s███████  \033[%d;%dH    "
                "██ "
@@ -456,15 +443,14 @@ void print_charge() {
                newl + 3, indent + 47, color.charge, newl + 4, indent + 47,
                newl + 5, indent + 47);
       }
-    } else {
-      printf("\033[%d;%dH                \033[%d;%dH         "
-             " "
-             "\033[%d;%dH           ",
-             newl + 3, indent + 47, newl + 4, indent + 47, newl + 5,
-             indent + 47);
     }
   } else {
-    if (bat.charging) {
+    if (!bat.charging) {
+      printf("\033[%d;%dH  %s          "
+             "\033[%d;%dH        "
+             " ",
+             newl + 3, indent + 47, color.charge, newl + 4, indent + 47);
+    } else {
       if (flags.alt_charge)
         printf("\033[%d;%dH   %s██████  "
                "\033[%d;%dH██████ "
@@ -475,11 +461,6 @@ void print_charge() {
                "\033[%d;%dH████████ "
                " ",
                newl + 3, indent + 47, color.charge, newl + 4, indent + 47);
-    } else {
-      printf("\033[%d;%dH  %s          "
-             "\033[%d;%dH        "
-             " ",
-             newl + 3, indent + 47, color.charge, newl + 4, indent + 47);
     }
   }
 }
@@ -521,10 +502,10 @@ void print_bat() {
 
   if (flags.fat) {
     core_rows = 7;
-    memcpy(cap, (int[]){0, 12, 24, 24, 24, 24, 24, 12}, sizeof cap);
+    memcpy(cap, (int[]){0, 0, 1, 1, 1, 1, 1, 0}, sizeof cap);
   } else {
     core_rows = 6;
-    memcpy(cap, (int[]){0, 12, 24, 24, 24, 24, 12, 0}, sizeof cap);
+    memcpy(cap, (int[]){0, 0, 1, 1, 1, 1, 0, 0}, sizeof cap);
   }
 
   if (!redraw) {
@@ -532,7 +513,6 @@ void print_bat() {
     char *empty_string = "                                     \0";
     char fill[150];
     char empty[50];
-    char cap_size[200];
 
     printf("\033[%d;%dH%s████████████████████████████████████████\n", newl,
            indent, color.shell);
@@ -543,16 +523,16 @@ void print_bat() {
     empty[33 - blocks] = '\0';
 
     for (int i = 1; i <= core_rows; i++) {
-      memset(cap_size, 0, sizeof(cap_size));
-      strncpy(cap_size, block_string, cap[i]);
-      cap_size[cap[i]] = '\0';
 
-      printf("\033[%d;%dH%s██%s%s%s%s%s", newl + i, indent, color.shell,
-             battery_color, fill, empty, color.shell, cap_size);
+      printf("\033[%d;%dH%s██%s%s%s%s████", newl + i, indent, color.shell,
+             battery_color, fill, empty, color.shell);
+
+      if (cap[i])
+        printf("███");
     }
 
-    printf("\033[%d;%dH%s████████████████████████████████████████\n",
-           newl + core_rows + 1, indent, color.shell);
+    printf("\033[%d;%dH████████████████████████████████████████\n",
+           newl + core_rows + 1, indent);
 
     redraw = 1;
   } else {
@@ -584,7 +564,6 @@ void big_loop(int opt) {
 }
 
 void print_small_bat_row() {
-  blocks = bat.capacity / 7;
   int i = 0;
 
   printf("%s██%s", color.shell, battery_color);
@@ -593,7 +572,6 @@ void print_small_bat_row() {
       printf("█");
     else
       printf(" ");
-
     i++;
   }
   printf("%s████▊", color.shell);
@@ -775,13 +753,6 @@ void handle_flags(int argc, char **argv) {
   }
 }
 
-int bools_to_int(char *s) {
-  if (!strcmp(s, "true\n")) {
-    return 1;
-  }
-  return 0;
-}
-
 void parse_config() {
   char fn[100];
   char *home = getenv("HOME");
@@ -918,7 +889,7 @@ int main(int argc, char **argv) {
       usleep(200000);
       bat_status(0);
 
-      if (!flags.small) {
+      if (!flags.small || flags.digits) {
         switch (flags.mode) {
         case 't':
           if (previous_bat.temp != bat.temp)
@@ -930,6 +901,7 @@ int main(int argc, char **argv) {
           break;
         }
       }
+
       if (previous_bat.capacity != bat.capacity ||
           previous_bat.charging != bat.charging) {
         main_loop(0);
