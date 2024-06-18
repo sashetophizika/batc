@@ -1,15 +1,9 @@
-#include <complex.h>
 #include <getopt.h>
-#include <locale.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/ioctl.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <termios.h>
 #include <unistd.h>
 
 struct battery {
@@ -108,6 +102,7 @@ char *color_to_ansi(char *color) {
     char r[10];
     char g[10];
     char b[10];
+
     strncpy(r, color + 1, 2);
     strncpy(g, color + 3, 2);
     strcpy(b, color + 5);
@@ -121,7 +116,7 @@ char *color_to_ansi(char *color) {
   return color;
 }
 
-char *get_param(char *param) {
+void *get_param(char *param) {
   char *line = NULL;
   size_t len = 0;
   char fn[100];
@@ -147,13 +142,17 @@ void bat_status(int full) {
   previous_bat.power = bat.power;
   previous_bat.charging = bat.charging;
 
-  bat.capacity = atoi(get_param("capacity"));
-  char *status = get_param("status");
+  char *cap = get_param("capacity");
+  bat.capacity = atoi(cap);
+  free(cap);
 
   if (flags.mode == 't' || full) {
-    bat.temp = atoi(get_param("temp")) / 10;
+    char *temp = get_param("temp");
+    bat.temp = atoi(temp) / 10;
+    free(temp);
   }
 
+  char *status = get_param("status");
   if (!strcmp(status, "Discharging\n") || !strcmp(status, "Not charging\n")) {
     bat.charging = 0;
     polarity = '-';
@@ -162,10 +161,20 @@ void bat_status(int full) {
     polarity = '+';
   }
 
+  free(status);
+
   if (flags.mode == 'm' || full) {
-    int charge_now = atoi(get_param("charge_now"));
-    int charge_full = atoi(get_param("charge_full"));
-    int current_now = atoi(get_param("current_now"));
+    char *cn = get_param("charge_now");
+    char *cf = get_param("charge_full");
+    char *cu = get_param("current_now");
+
+    int charge_now = atoi(cn);
+    int charge_full = atoi(cf);
+    int current_now = atoi(cu);
+
+    free(cn);
+    free(cf);
+    free(cu);
 
     if (bat.charging == 1) {
       bat.power = (charge_full - charge_now) * 60 / current_now;
@@ -830,6 +839,10 @@ void parse_config() {
       else if (!strcmp(key, "mode"))
         flags.mode = val[0];
     }
+
+    fclose(fp);
+    if (line)
+      free(line);
   }
 }
 
