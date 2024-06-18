@@ -1,6 +1,6 @@
 # Battery
 
-### Simple utility to monitor the battery in a stylish manner.
+### Simple utility to monitor the battery in a stylish manner
 
 ![image](screenshot.png "screenshot")
 ### Small version:
@@ -37,6 +37,15 @@ batc
 * **-c, --alt-charge**: use an alternate charging symbol (requires nerd fonts)
 * **-n, --no-color**: remove colors
 * **-b, --bat-number=(bat_number)**: specify the battery number (default is the lowest one)
+
+### Keybinds:
+In live mode you can use some keybinds.
+
+* **d**: toggle digits
+* **e**: toggle extra_colors
+* **f**: toggle fat
+* **c**: toggle alt_charge
+* **m**: cycle mode
 
 ## Configuration
 

@@ -637,27 +637,29 @@ int handle_input(char c) {
   case 'd':
     toggle(&flags.digits);
     redraw = 0;
-    bat_status(0);
     main_loop(0);
     break;
   case 'f':
     toggle(&flags.fat);
     redraw = 0;
-    bat_status(0);
     main_loop(1);
     break;
   case 'c':
     toggle(&flags.alt_charge);
-    bat_status(0);
     print_charge();
     break;
-  case 't':
+  case 'e':
+    toggle(&flags.extra_colors);
+    main_loop(0);
+    break;
+  case 'm':
     if (flags.mode == 'c')
       flags.mode = 't';
     else if (flags.mode == 't')
       flags.mode = 'm';
     else if (flags.mode == 'm')
       flags.mode = 'c';
+
     redraw = 0;
     bat_status(0);
     main_loop(0);

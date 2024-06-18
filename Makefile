@@ -1,4 +1,4 @@
 CC=gcc
 
 batc: main.c
-	$(CC) main.c -o batc
+	$(CC) main.c -o batc -O3
