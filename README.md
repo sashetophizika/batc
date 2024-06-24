@@ -1,6 +1,6 @@
 # Battery
 
-### Simple utility to monitor the battery in a stylish manner
+### Simple utility to monitor the battery in a stylish manner.
 
 ![image](screenshot.png "screenshot")
 ### Small version:

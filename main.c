@@ -62,12 +62,7 @@ char *previous_battery_color = "";
 int previous_num_length = 0;
 int previous_blocks = 0;
 
-void toggle(int *x) {
-  if (*x)
-    *x = 0;
-  else
-    *x = 1;
-}
+void toggle(int *x) { *x = *x ? 0 : 1; }
 
 int digit_count(int num) {
   int count = 0;
@@ -77,13 +72,6 @@ int digit_count(int num) {
   } while (num != 0);
 
   return count;
-}
-
-int bools_to_int(char *s) {
-  if (!strcmp(s, "true\n")) {
-    return 1;
-  }
-  return 0;
 }
 
 char *color_to_ansi(char *color) {
@@ -183,17 +171,13 @@ void bat_status(int full) {
     free(cf);
     free(cu);
 
-    if (bat.charging == 1) {
+    if (bat.charging == 1)
       bat.power = (charge_full - charge_now) * 60 / (current_now + 1);
-    } else {
+    else
       bat.power = charge_now * 60 / (current_now + 1);
-    }
   }
 
-  if (flags.small)
-    blocks = bat.capacity / 7;
-  else
-    blocks = bat.capacity / 3;
+  blocks = flags.small ? bat.capacity / 7 : bat.capacity / 3;
 }
 
 void update_state() {
@@ -528,7 +512,7 @@ void print_bat() {
              battery_color, fill, empty, color.shell);
 
       if (cap[i])
-        printf("███");
+        printf("████");
     }
 
     printf("\033[%d;%dH████████████████████████████████████████\n",
@@ -603,12 +587,7 @@ void small_loop() {
   printf("\e[5F");
 }
 
-void main_loop(int opt) {
-  if (flags.small)
-    small_loop();
-  else
-    big_loop(opt);
-}
+void main_loop(int opt) { flags.small ? small_loop() : big_loop(opt); }
 
 int handle_input(char c) {
   switch (c) {
@@ -794,21 +773,21 @@ void parse_config() {
       else if (!strcmp(key, "color_left"))
         color.left = color_to_ansi(val);
       else if (!strcmp(key, "colors"))
-        flags.colors = bools_to_int(val);
+        flags.colors = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "live"))
-        flags.live = bools_to_int(val);
+        flags.live = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "digits"))
-        flags.digits = bools_to_int(val);
+        flags.digits = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "fat"))
-        flags.fat = bools_to_int(val);
+        flags.fat = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "small"))
-        flags.small = bools_to_int(val);
+        flags.small = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "minimal"))
-        flags.minimal = bools_to_int(val);
+        flags.minimal = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "alt_charge"))
-        flags.alt_charge = bools_to_int(val);
+        flags.alt_charge = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "extra_colors"))
-        flags.extra_colors = bools_to_int(val);
+        flags.extra_colors = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "mode"))
         flags.mode = val[0];
     }
