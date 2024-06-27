@@ -29,6 +29,7 @@ batc
 
 * **-l, --live**: monitor the battery live (close with `q` or `Esc`)
 * **-s, --small**: print a small inline battery instead
+* **-i, --inline**: print the battery inline instead of the center of the screen
 * **-f, --fat**: print a slightly thicker battery
 * **-d, --digits**: print the current capacity as a number inside of the battery (does not work with -s)
 * **-M, --mode=(mode)**: specify mode to be printed with -d (c for capacity, m for time left or to full, t for temperature)
