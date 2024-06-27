@@ -144,12 +144,10 @@ void bat_status(int full) {
 
   char *cap = get_param("capacity");
   bat.capacity = atoi(cap);
-  free(cap);
 
   if (flags.mode == 't' || full) {
     char *temp = get_param("temp");
     bat.temp = atoi(temp) / 10;
-    free(temp);
   }
 
   char *status = get_param("status");
@@ -161,8 +159,6 @@ void bat_status(int full) {
     polarity = '+';
   }
 
-  free(status);
-
   if (flags.mode == 'm' || full) {
     char *cn = get_param("charge_now");
     char *cf = get_param("charge_full");
@@ -171,10 +167,6 @@ void bat_status(int full) {
     int charge_now = atoi(cn);
     int charge_full = atoi(cf);
     int current_now = atoi(cu);
-
-    free(cn);
-    free(cf);
-    free(cu);
 
     if (bat.charging == 1)
       bat.power = (charge_full - charge_now) * 60 / (current_now + 1);
@@ -193,7 +185,7 @@ void update_state() {
   else
     battery_color = color.high;
 
-  int data;
+  int data = 0;
   switch (flags.mode) {
   case 'c':
     data = bat.capacity;
@@ -378,7 +370,7 @@ void print_digit(int digit, int row, int col, int negate) {
 }
 
 void print_number(int row) {
-  int data;
+  int data = 0;
   switch (flags.mode) {
   case 'c':
     data = bat.capacity;
@@ -548,8 +540,8 @@ void big_loop(int opt) {
 
       tcgetattr(0, &term);
       tcgetattr(0, &restore);
-      term.c_lflag &= ~(ICANON | ECHO);
       tcsetattr(0, TCSANOW, &term);
+      term.c_lflag &= ~(ICANON | ECHO);
 
       write(1, "\033[6n", 4);
       for (ch = 0; ch != 'R'; read(0, &ch, 1)) {
@@ -588,6 +580,9 @@ void big_loop(int opt) {
   else {
     printf("\r\n");
   }
+
+  if (!flags.inlin)
+    printf("\r\n");
 }
 
 void print_small_bat_row() {
@@ -853,20 +848,18 @@ void cleanup() {
   system("/bin/stty cooked");
   system("/bin/stty echo");
 
+  printf("\e[0m\e[?25h");
   if (flags.small) {
-    printf("\e[?25h\e[5B");
-  } else {
-    if (flags.live) {
-      printf("\e[?25h\e[?47l\e[u");
-    } else {
-      struct winsize w;
-      ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-      char buffer[20];
-      if (flags.inlin)
-        printf("\e[?25h\e[3B");
-      else
-        printf("\e[?25h\e[%d;0H", w.ws_row);
-    }
+    printf("\e[5B");
+  } else if (flags.live) {
+    printf("\e[?47l\e[u");
+  } else if (flags.inlin)
+    printf("\e[3B");
+  else {
+    struct winsize w;
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    char buffer[20];
+    printf("\e[%d;0H", w.ws_row);
   }
 }
 
