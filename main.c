@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 
 struct battery {
@@ -33,6 +34,7 @@ struct flags {
   int fat;
   int alt_charge;
   int extra_colors;
+  int inlin;
   char mode;
   char bat_number[50];
 };
@@ -45,7 +47,7 @@ struct colors color = {
     "\033[0;36m\0", "\033[0;34m\0", "\033[0;36m\0", "\033[0m\0",
 };
 
-struct flags flags = {1, 0, 0, 0, 0, 0, 0, 1, 'c', ""};
+struct flags flags = {1, 0, 0, 0, 0, 0, 0, 1, 0, 'c', ""};
 
 int newl = 0;
 int indent = 0;
@@ -94,13 +96,16 @@ char *color_to_ansi(char *color) {
   else if (strcmp(color, "white\n") == 0)
     return "\e[0;37m\0";
   else if (color[0] == '#') {
-    char r[10];
-    char g[10];
-    char b[10];
+    char r[3];
+    char g[3];
+    char b[3];
 
     strncpy(r, color + 1, 2);
+    r[2] = '\0';
     strncpy(g, color + 3, 2);
+    g[2] = '\0';
     strcpy(b, color + 5);
+    b[2] = '\0';
 
     char *a = malloc(100);
     sprintf(a, "\e[38;2;%ld;%ld;%ldm", strtol(r, NULL, 16), strtol(g, NULL, 16),
@@ -498,7 +503,7 @@ void print_bat() {
     char fill[150];
     char empty[50];
 
-    printf("\033[%d;%dH%s████████████████████████████████████████\n", newl,
+    printf("\033[%d;%dH%s████████████████████████████████████████", newl,
            indent, color.shell);
 
     strncpy(fill, block_string, (blocks + 1) * 3);
@@ -515,7 +520,7 @@ void print_bat() {
         printf("████");
     }
 
-    printf("\033[%d;%dH████████████████████████████████████████\n",
+    printf("\033[%d;%dH████████████████████████████████████████",
            newl + core_rows + 1, indent);
 
     redraw = 1;
@@ -528,14 +533,50 @@ void print_bat() {
 
 void big_loop(int opt) {
   if (opt == 1) {
-    printf("\e[2J");
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
     rows = w.ws_row;
     cols = w.ws_col;
-    newl = rows / 2 - 3;
-    indent = cols / 2 - 24;
+
+    if (flags.inlin && !flags.live) {
+      char buf[2] = {};
+      int i = 0;
+      char ch;
+
+      struct termios term, restore;
+
+      tcgetattr(0, &term);
+      tcgetattr(0, &restore);
+      term.c_lflag &= ~(ICANON | ECHO);
+      tcsetattr(0, TCSANOW, &term);
+
+      write(1, "\033[6n", 4);
+      for (ch = 0; ch != 'R'; read(0, &ch, 1)) {
+        if (ch >= '0' && ch <= '9') {
+          if (i < 2)
+            buf[i] = ch;
+          i++;
+        }
+      }
+
+      tcsetattr(0, TCSANOW, &restore);
+
+      newl = atoi(buf) + 1;
+      int min_rows = 9 + flags.fat;
+      if (rows - newl < min_rows) {
+        for (int i = 0; i < min_rows; i++) {
+          printf("\r\n");
+        }
+        newl = rows - min_rows + 1;
+      }
+
+      indent = 0;
+    } else {
+      printf("\e[2J");
+      newl = rows / 2 - 3;
+      indent = cols / 2 - 24;
+    }
   }
 
   update_state();
@@ -544,7 +585,9 @@ void big_loop(int opt) {
 
   if (flags.digits)
     print_number(newl + 2);
-  printf("\r\n");
+  else {
+    printf("\r\n");
+  }
 }
 
 void print_small_bat_row() {
@@ -657,11 +700,15 @@ void print_help() {
        "  -l, --live                       Monitor the battery live\r\n"
        "  -s, --small                      Print a small version of the "
        "battery\r\n"
-       "  -f, --fat                        Draws a slightly thicker battery\r\n"
+       "  -i, --inline                     Prints the battery inline instead "
+       "of the center of the screen\r\n"
+       "  -f, --fat                        Draws a slightly thicker "
+       "battery\r\n"
        "  -d, --digits                     Prints the current capacity as a "
        "number in the "
        "battery\r\n"
-       "  -m, --mode MODE                  Specify the mode to be printed with "
+       "  -m, --mode MODE                  Specify the mode to be printed "
+       "with "
        "-d (c for "
        "capacity, m for time, t for temperature)\r\n"
        "  -e, --extra-colors               Disable extra core color patterns "
@@ -684,13 +731,14 @@ void handle_flags(int argc, char **argv) {
       {"no-color", no_argument, NULL, 'n'},
       {"digits", no_argument, NULL, 'd'},
       {"alt-charge", no_argument, NULL, 'c'},
-      {"flags.live", no_argument, NULL, 'l'},
-      {"flags.minimal", no_argument, NULL, 'm'},
+      {"live", no_argument, NULL, 'l'},
+      {"minimal", no_argument, NULL, 'm'},
+      {"inline", no_argument, NULL, 'i'},
       {"small", no_argument, NULL, 's'},
       {"help", no_argument, NULL, 'h'},
   };
   char opt;
-  while ((opt = getopt_long(argc, argv, ":hnlmtM:csdfb:", long_options,
+  while ((opt = getopt_long(argc, argv, ":hnlmtM:csidfb:", long_options,
                             NULL)) != -1) {
     switch (opt) {
     case 'n':
@@ -701,6 +749,9 @@ void handle_flags(int argc, char **argv) {
       break;
     case 'm':
       toggle(&flags.minimal);
+      break;
+    case 'i':
+      toggle(&flags.inlin);
       break;
     case 's':
       toggle(&flags.small);
@@ -805,14 +856,16 @@ void cleanup() {
   if (flags.small) {
     printf("\e[?25h\e[5B");
   } else {
-
     if (flags.live) {
       printf("\e[?25h\e[?47l\e[u");
     } else {
       struct winsize w;
       ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
       char buffer[20];
-      printf("\e[?25h\e[%d;0H", w.ws_row);
+      if (flags.inlin)
+        printf("\e[?25h\e[3B");
+      else
+        printf("\e[?25h\e[%d;0H", w.ws_row);
     }
   }
 }
