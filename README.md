@@ -75,6 +75,7 @@ colors = true
 live = false 
 minimal = false
 small = false
+inline = false
 digits = false
 fat = false
 alt_charge = false

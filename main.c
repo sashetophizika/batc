@@ -729,6 +729,8 @@ void parse_config() {
         flags.fat = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "small"))
         flags.small = strcmp(val, "true\n") ? 0 : 1;
+      else if (!strcmp(key, "inline"))
+        flags.inlin = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "minimal"))
         flags.minimal = strcmp(val, "true\n") ? 0 : 1;
       else if (!strcmp(key, "alt_charge"))
