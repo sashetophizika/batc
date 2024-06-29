@@ -261,7 +261,6 @@ void print_digit(int digit, int row, int col, int negate) {
 
   printf("%s\033[%d;%dH", battery_color, row, col);
 
-  char temp[100] = {};
   for (int i = 0; i < 30; i++) {
     if ((i % 6 < negate) != (chars[i] == '1'))
       printf("█");
@@ -272,6 +271,8 @@ void print_digit(int digit, int row, int col, int negate) {
       printf("\033[%d;%dH", row + (i + 1) / 6, col);
     }
   }
+
+  printf("\033[%d;0H", row + flags.fat + 3);
 }
 
 void print_number(int row) {
@@ -383,12 +384,7 @@ void print_col(int rows) {
 }
 
 void print_bat() {
-  int core_rows;
-
-  if (flags.fat)
-    core_rows = 7;
-  else
-    core_rows = 6;
+  int core_rows = 6 + flags.fat;
 
   if (!redraw) {
     char *block_string = "█████████████████████████████████████\0";
