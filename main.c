@@ -226,145 +226,50 @@ void print_digit(int digit, int row, int col, int negate) {
 
   switch (digit) {
   case 0:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG██  ██\e[1B\e[%1$dG██  ██\e[1B\e[%1$dG██  "
-             "██\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\033[%1$dG  ██  \e[1B\e[%1$dG  ██  \e[1B\e[%1$dG  ██  "
-             "\e[1B\e[%1$dG      ",
-             col);
     chars = "111111110011110011110011111111";
     break;
   case 1:
-    snprintf(full, 1000,
-             "████  \e[1B\e[%1$dG  ██  \e[1B\e[%1$dG  ██  \e[1B\e[%1$dG  ██  "
-             "\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "    ██\e[1B\e[%1$dG██  ██\e[1B\e[%1$dG██  ██\e[1B\e[%1$dG██  "
-             "██\e[1B\e[%1$dG      ",
-             col);
     chars = "111100001100001100001100111111";
     break;
   case 2:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG    ██\e[1B\e[%1$dG██████\e[1B\e[%1$dG██    "
-             "\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\e[%1$dG████  \e[1B\e[%1$dG      \e[1B\e[%1$dG  "
-             "████\e[1B\e[%1$dG      ",
-             col);
     chars = "111111000011111111110000111111";
     break;
   case 3:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG    ██\e[1B\e[%1$dG██████\e[1B\e[%1$dG    "
-             "██\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\e[%1$dG████  \e[1B\e[%1$dG      \e[1B\e[%1$dG████  "
-             "\e[1B\e[%1$dG      ",
-             col);
     chars = "111111000011111111000011111111";
     break;
   case 4:
-    snprintf(full, 1000,
-             "██  ██\e[1B\e[%1$dG██  ██\e[1B\e[%1$dG██████\e[1B\e[%1$dG    "
-             "██\e[1B\e[%1$dG    ██",
-             col);
-    snprintf(empty, 1000,
-             "  ██  \e[1B\e[%1$dG  ██  \e[1B\e[%1$dG      \e[1B\e[%1$dG████  "
-             "\e[1B\e[%1$dG████  ",
-             col);
     chars = "110011110011111111000011000011";
     break;
   case 5:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG██    \e[1B\e[%1$dG██████\e[1B\e[%1$dG    "
-             "██\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\e[%1$dG  ████\e[1B\e[%1$dG      \e[1B\e[%1$dG████  "
-             "\e[1B\e[%1$dG      ",
-             col);
     chars = "111111110000111111000011111111";
     break;
   case 6:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG██    \e[1B\e[%1$dG██████\e[1B\e[%1$dG██  "
-             "██\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\e[%1$dG  ████\e[1B\e[%1$dG      \e[1B\e[%1$dG  ██  "
-             "\e[1B\e[%1$dG      ",
-             col);
     chars = "111111110000111111110011111111";
     break;
   case 7:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG    ██\e[1B\e[%1$dG    ██\e[1B\e[%1$dG    "
-             "██\e[1B\e[%1$dG    ██",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\e[%1$dG████  \e[1B\e[%1$dG████  \e[1B\e[%1$dG████  "
-             "\e[1B\e[%1$dG████  ",
-             col);
     chars = "111111000011000011000011000011";
     break;
   case 8:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG██  ██\e[1B\e[%1$dG██████\e[1B\e[%1$dG██  "
-             "██\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\e[%1$dG  ██  \e[1B\e[%1$dG      \e[1B\e[%1$dG  ██  "
-             "\e[1B\e[%1$dG      ",
-             col);
     chars = "111111110011111111110011111111";
     break;
   case 9:
-    snprintf(full, 1000,
-             "██████\e[1B\e[%1$dG██  ██\e[1B\e[%1$dG██████\e[1B\e[%1$dG    "
-             "██\e[1B\e[%1$dG██████",
-             col);
-    snprintf(empty, 1000,
-             "      \e[1B\e[%1$dG  ██  \e[1B\e[%1$dG      \e[1B\e[%1$dG████  "
-             "\e[1B\e[%1$dG      ",
-             col);
     chars = "111111110011111111000011111111";
     break;
   default:
-    snprintf(full, 1000,
-             "      \e[1B\e[%1$dG      \e[1B\e[%1$dG      \e[1B\e[%1$dG      "
-             "\e[1B\e[%1$dG      ",
-             col);
-    snprintf(empty, 1000,
-             "██████\e[1B\e[%1$dG██████\e[1B\e[%1$dG██████\e[1B\e[%1$"
-             "dG██████\e[1B\e[$"
-             "3g██████",
-             col);
     chars = "000000000000000000000000000000";
   }
 
   printf("%s\033[%d;%dH", battery_color, row, col);
 
-  if (negate == 0) {
-    printf("%s", full);
-  } else if (negate >= 6)
-    printf("%s", empty);
-  else {
-    char temp[100] = {};
-    for (int i = 0; i < 30; i++) {
-      if ((i % 6 < negate) != (chars[i] == '1'))
-        printf("█");
-      else
-        printf(" ");
+  char temp[100] = {};
+  for (int i = 0; i < 30; i++) {
+    if ((i % 6 < negate) != (chars[i] == '1'))
+      printf("█");
+    else
+      printf(" ");
 
-      if (i % 6 == 5) {
-        printf("\033[%d;%dH", row + (i + 1) / 6, col);
-      }
+    if (i % 6 == 5) {
+      printf("\033[%d;%dH", row + (i + 1) / 6, col);
     }
   }
 }
@@ -479,15 +384,11 @@ void print_col(int rows) {
 
 void print_bat() {
   int core_rows;
-  int cap[8];
 
-  if (flags.fat) {
+  if (flags.fat)
     core_rows = 7;
-    memcpy(cap, (int[]){0, 0, 1, 1, 1, 1, 1, 0}, sizeof cap);
-  } else {
+  else
     core_rows = 6;
-    memcpy(cap, (int[]){0, 0, 1, 1, 1, 1, 0, 0}, sizeof cap);
-  }
 
   if (!redraw) {
     char *block_string = "█████████████████████████████████████\0";
@@ -504,11 +405,10 @@ void print_bat() {
     empty[33 - blocks] = '\0';
 
     for (int i = 1; i <= core_rows; i++) {
-
       printf("\033[%d;%dH%s██%s%s%s%s████", newl + i, indent, color.shell,
              battery_color, fill, empty, color.shell);
 
-      if (cap[i])
+      if (i > 1 && i < core_rows)
         printf("████");
     }
 
@@ -523,52 +423,57 @@ void print_bat() {
   previous_blocks = blocks;
 }
 
+void define_position() {
+  struct winsize w;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+
+  rows = w.ws_row;
+  cols = w.ws_col;
+
+  if (flags.inlin && !flags.live) {
+    char buf[2] = {};
+    int i = 0;
+    char ch;
+
+    struct termios term, restore;
+
+    tcgetattr(0, &term);
+    tcgetattr(0, &restore);
+    tcsetattr(0, TCSANOW, &term);
+    term.c_lflag &= ~(ICANON | ECHO);
+
+    write(1, "\033[6n", 4);
+    for (ch = 0; ch != 'R'; read(0, &ch, 1)) {
+      if (ch >= '0' && ch <= '9') {
+        if (i < 2)
+          buf[i] = ch;
+        i++;
+      } else if (ch == ';')
+        i = 99;
+    }
+
+    tcsetattr(0, TCSANOW, &restore);
+
+    newl = atoi(buf) + 1;
+    int min_rows = 9 + flags.fat;
+    if (rows - newl < min_rows) {
+      for (int i = 0; i < min_rows; i++) {
+        printf("\r\n");
+      }
+      newl = rows - min_rows + 1;
+    }
+
+    indent = 0;
+  } else {
+    printf("\e[2J");
+    newl = rows / 2 - 3;
+    indent = cols / 2 - 24;
+  }
+}
+
 void big_loop(int opt) {
   if (opt == 1) {
-    struct winsize w;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-
-    rows = w.ws_row;
-    cols = w.ws_col;
-
-    if (flags.inlin && !flags.live) {
-      char buf[2] = {};
-      int i = 0;
-      char ch;
-
-      struct termios term, restore;
-
-      tcgetattr(0, &term);
-      tcgetattr(0, &restore);
-      tcsetattr(0, TCSANOW, &term);
-      term.c_lflag &= ~(ICANON | ECHO);
-
-      write(1, "\033[6n", 4);
-      for (ch = 0; ch != 'R'; read(0, &ch, 1)) {
-        if (ch >= '0' && ch <= '9') {
-          if (i < 2)
-            buf[i] = ch;
-          i++;
-        }
-      }
-
-      tcsetattr(0, TCSANOW, &restore);
-
-      newl = atoi(buf) + 1;
-      int min_rows = 9 + flags.fat;
-      if (rows - newl < min_rows) {
-        for (int i = 0; i < min_rows; i++) {
-          printf("\r\n");
-        }
-        newl = rows - min_rows + 1;
-      }
-
-      indent = 0;
-    } else {
-      printf("\e[2J");
-      newl = rows / 2 - 3;
-      indent = cols / 2 - 24;
-    }
+    define_position();
   }
 
   update_state();
@@ -695,7 +600,7 @@ void print_help() {
        "  -l, --live                       Monitor the battery live\r\n"
        "  -s, --small                      Print a small version of the "
        "battery\r\n"
-       "  -i, --inline                     Prints the battery inline instead "
+       "  -i, --inline                     Print the battery inline instead "
        "of the center of the screen\r\n"
        "  -f, --fat                        Draws a slightly thicker "
        "battery\r\n"
@@ -911,7 +816,7 @@ int main(int argc, char **argv) {
     pthread_create(&thread, NULL, event_loop, NULL);
 
     while (1) {
-      usleep(200000);
+      usleep(500000);
       bat_status(0);
 
       if (!flags.small || flags.digits) {
