@@ -122,8 +122,8 @@ void *get_param(char *param) {
   char fn[100];
   snprintf(fn, 100, "%s/%s", flags.bat_number, param);
 
-  // if (!strcmp(param, "capacity"))
-  //   strcpy(fn, "/home/sasho/testbat/capacity");
+  /*if (!strcmp(param, "capacity"))*/
+  /*  strcpy(fn, "/home/sasho/testbat/capacity");*/
 
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
@@ -379,7 +379,6 @@ void print_col(int rows) {
     for (int j = 0; j < rows; j++) {
       printf("%s\e[1B\e[1D", new_sym);
     }
-    printf("\r\n");
   }
 }
 
@@ -478,9 +477,8 @@ void big_loop(int opt) {
 
   if (flags.digits)
     print_number(newl + 2);
-  else {
+  else
     printf("\r\n");
-  }
 
   if (!flags.inlin)
     printf("\r\n");
@@ -560,18 +558,18 @@ int handle_input(char c) {
     bat_status(0);
     main_loop(0);
     break;
-  // case 'a': {
-  //   char b[100];
-  //   snprintf(b, 100, "echo %d > ~/testbat/capacity", bat.capacity- 1);
-  //   system(b);
-  //   break;
-  // }
-  // case 's': {
-  //   char b[100];
-  //   snprintf(b, 100, "echo %d > ~/testbat/capacity", bat.capacity+ 1);
-  //   system(b);
-  //   break;
-  // }
+  /*case 'a': {*/
+  /*  char b[100];*/
+  /*  snprintf(b, 100, "echo %d > ~/testbat/capacity", bat.capacity - 1);*/
+  /*  system(b);*/
+  /*  break;*/
+  /*}*/
+  /*case 's': {*/
+  /*  char b[100];*/
+  /*  snprintf(b, 100, "echo %d > ~/testbat/capacity", bat.capacity + 1);*/
+  /*  system(b);*/
+  /*  break;*/
+  /*}*/
   case 'q':
   case 27:
     exit(0);
@@ -796,10 +794,9 @@ void print_minimal() {
 }
 
 int main(int argc, char **argv) {
-  handle_flags(argc, argv);
-
   setup();
   atexit(cleanup);
+  handle_flags(argc, argv);
 
   if (flags.minimal) {
     print_minimal();
@@ -814,7 +811,7 @@ int main(int argc, char **argv) {
     pthread_create(&thread, NULL, event_loop, NULL);
 
     while (1) {
-      usleep(500000);
+      usleep(200000);
       bat_status(0);
 
       if (!flags.small || flags.digits) {
