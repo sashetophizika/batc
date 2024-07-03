@@ -8,43 +8,25 @@
 #include <unistd.h>
 
 struct battery {
-  int capacity;
-  int charging;
-  int temp;
-  int power;
-};
-
-struct colors {
-  char *high;
-  char *mid;
-  char *low;
-  char *temp;
-  char *full;
-  char *left;
-  char *charge;
-  char *shell;
-};
-
-struct flags {
-  int colors;
-  int live;
-  int minimal;
-  int small;
-  int digits;
-  int fat;
-  int alt_charge;
-  int extra_colors;
-  int inlin;
-  char mode;
-  char bat_number[50];
+  int capacity, charging, temp, power;
 };
 
 struct battery bat = {0, 0, 0, 0};
 struct battery previous_bat = {0, 0, 0, 0};
 
+struct colors {
+  char *high, *mid, *low, *temp, *full, *left, *charge, *shell;
+};
+
 struct colors color = {
     "\033[0;32m\0", "\033[0;33m\0", "\033[0;31m\0", "\033[0;35m\0",
     "\033[0;36m\0", "\033[0;34m\0", "\033[0;36m\0", "\033[0m\0",
+};
+
+struct flags {
+  int colors, live, minimal, small, digits, fat, alt_charge, extra_colors,
+      inlin;
+  char mode, bat_number[50];
 };
 
 struct flags flags = {1, 0, 0, 0, 0, 0, 0, 1, 0, 'c', ""};
@@ -96,9 +78,7 @@ char *color_to_ansi(char *color) {
   else if (strcmp(color, "white\n") == 0)
     return "\e[0;37m\0";
   else if (color[0] == '#') {
-    char r[3];
-    char g[3];
-    char b[3];
+    char r[3], g[3], b[3];
 
     strncpy(r, color + 1, 2);
     r[2] = '\0';
@@ -220,8 +200,6 @@ void update_state() {
 }
 
 void print_digit(int digit, int row, int col, int negate) {
-  char full[1000];
-  char empty[1000];
   char *chars;
 
   switch (digit) {
@@ -354,9 +332,7 @@ void print_charge() {
 
 void print_col(int rows) {
   int diff = blocks - previous_blocks;
-  int step;
-  int start;
-  int end;
+  int step, start, end;
   char *new_sym;
 
   if (diff > 0) {
@@ -388,8 +364,7 @@ void print_bat() {
   if (!redraw) {
     char *block_string = "█████████████████████████████████████\0";
     char *empty_string = "                                     \0";
-    char fill[150];
-    char empty[50];
+    char fill[150], empty[50];
 
     printf("\033[%d;%dH%s████████████████████████████████████████", newl,
            indent, color.shell);
@@ -428,7 +403,7 @@ void define_position() {
   if (flags.inlin && !flags.live) {
     char buf[2] = {};
     int i = 0;
-    char ch;
+    char ch = '\0';
 
     struct termios term, restore;
 
@@ -691,8 +666,7 @@ void parse_config() {
       return;
     }
 
-    char *key;
-    char *val;
+    char *key, *val;
 
     while (getline(&line, &len, fp) != -1) {
       key = strtok(line, " =");
@@ -750,11 +724,11 @@ void cleanup() {
   system("/bin/stty echo");
 
   printf("\e[0m\e[?25h");
-  if (flags.small) {
+  if (flags.small)
     printf("\e[5B");
-  } else if (flags.live) {
+  else if (flags.live)
     printf("\e[?47l\e[u");
-  } else if (flags.inlin)
+  else if (flags.inlin)
     printf("\e[3B");
   else {
     struct winsize w;
@@ -773,7 +747,6 @@ void setup() {
     printf("\e[?47h\e[s");
 
   strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
-  parse_config();
 
   if (!flags.colors) {
     color.shell = "\e[0m";
@@ -794,9 +767,10 @@ void print_minimal() {
 }
 
 int main(int argc, char **argv) {
+  parse_config();
+  handle_flags(argc, argv);
   setup();
   atexit(cleanup);
-  handle_flags(argc, argv);
 
   if (flags.minimal) {
     print_minimal();
