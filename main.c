@@ -546,7 +546,8 @@ int handle_input(char c) {
   /*  break;*/
   /*}*/
   case 'q':
-  case 27:
+  case 27: // Escape
+  case 3:  // Ctrl-c
     exit(0);
   }
   return 1;
@@ -720,8 +721,7 @@ void parse_config() {
 }
 
 void cleanup() {
-  system("/bin/stty cooked");
-  system("/bin/stty echo");
+  system("/bin/stty cooked echo");
 
   printf("\e[0m\e[?25h");
   if (flags.small)
@@ -739,19 +739,18 @@ void cleanup() {
 }
 
 void setup() {
-  system("/bin/stty raw");
-  system("/bin/stty -echo");
+  system("/bin/stty raw -echo");
   printf("\e[?25l");
 
   if (flags.live && !flags.small)
     printf("\e[?47h\e[s");
 
-  strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
-
   if (!flags.colors) {
     color.shell = "\e[0m";
     color.charge = "\e[0m";
   }
+
+  strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
 }
 
 void print_minimal() {
