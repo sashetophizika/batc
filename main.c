@@ -15,14 +15,14 @@ typedef struct Battery {
 } Battery;
 
 typedef struct Colors {
-  char *high;
-  char *mid;
-  char *low;
-  char *temp;
-  char *full;
-  char *left;
-  char *charge;
-  char *shell;
+  const char *high;
+  const char *mid;
+  const char *low;
+  const char *temp;
+  const char *full;
+  const char *left;
+  const char *charge;
+  const char *shell;
 } Colors;
 
 typedef struct Flags {
@@ -43,11 +43,27 @@ Battery bat = {0, 0, 0, 0};
 Battery previous_bat = {0, 0, 0, 0};
 
 Colors colors = {
-    "\033[0;32m\0", "\033[0;33m\0", "\033[0;31m\0", "\033[0;35m\0",
-    "\033[0;36m\0", "\033[0;34m\0", "\033[0;36m\0", "\033[0m\0",
+    .high = "\033[0;32m\0",
+    .mid = "\033[0;33m\0",
+    .low = "\033[0;31m\0",
+    .temp = "\033[0;35m\0",
+    .full = "\033[0;36m\0",
+    .left = "\033[0;34m\0",
+    .charge = "\033[0;36m\0",
+    .shell = "\033[0m\0",
 };
 
-Flags flags = {1, 0, 0, 0, 0, 0, 0, 1, 0, 'c', ""};
+Flags flags = {.colors = 1,
+               .live = 0,
+               .minimal = 0,
+               .small = 0,
+               .digits = 0,
+               .fat = 0,
+               .alt_charge = 0,
+               .extra_colors = 1,
+               .inlin = 0,
+               .mode = 'c',
+               .bat_number = ""};
 
 int newl = 0;
 int indent = 0;
@@ -58,8 +74,8 @@ int redraw = 0;
 int blocks = 0;
 
 char polarity = '-';
-char *battery_color = "";
-char *previous_battery_color = "";
+const char *battery_color = "";
+const char *previous_battery_color = "";
 
 int previous_num_length = 0;
 int previous_blocks = 0;
@@ -76,45 +92,45 @@ int digit_count(int num) {
   return count;
 }
 
-char *color_to_ansi(char *color) {
+const char *color_to_ansi(char *color) {
   if (strcmp(color, "none\n") == 0)
-    return "\e[0m\0";
+    return "\033[0m\0";
   else if (strcmp(color, "black\n") == 0)
-    return "\e[0;30m\0";
+    return "\033[0;30m\0";
   else if (strcmp(color, "red\n") == 0)
-    return "\e[0;31m\0";
+    return "\033[0;31m\0";
   else if (strcmp(color, "green\n") == 0)
-    return "\e[0;32m\0";
+    return "\033[0;32m\0";
   else if (strcmp(color, "yellow\n") == 0)
-    return "\e[0;33m\0";
+    return "\033[0;33m\0";
   else if (strcmp(color, "blue\n") == 0)
-    return "\e[0;34m\0";
+    return "\033[0;34m\0";
   else if (strcmp(color, "magenta\n") == 0)
-    return "\e[0;35m\0";
+    return "\033[0;35m\0";
   else if (strcmp(color, "cyan\n") == 0)
-    return "\e[0;36m\0";
+    return "\033[0;36m\0";
   else if (strcmp(color, "white\n") == 0)
-    return "\e[0;37m\0";
+    return "\033[0;37m\0";
   else if (color[0] == '#') {
-    char r[3], g[3], b[3];
+    char r[3], g[3] = "11\0", b[3];
 
     strncpy(r, color + 1, 2);
     r[2] = '\0';
     strncpy(g, color + 3, 2);
     g[2] = '\0';
-    strcpy(b, color + 5);
+    strncpy(b, color + 5, 2);
     b[2] = '\0';
 
     char *a = malloc(100);
-    sprintf(a, "\e[38;2;%ld;%ld;%ldm", strtol(r, NULL, 16), strtol(g, NULL, 16),
-            strtol(b, NULL, 16));
+    sprintf(a, "\033[38;2;%ld;%ld;%ldm", strtol(r, NULL, 16),
+            strtol(g, NULL, 16), strtol(b, NULL, 16));
     return a;
   }
 
   return color;
 }
 
-void *get_param(char *param) {
+char *get_param(const char *param) {
   char *line = NULL;
   size_t len = 0;
   char fn[100];
@@ -125,7 +141,7 @@ void *get_param(char *param) {
 
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
-    return "0";
+    return (char*)"0";
   }
 
   getline(&line, &len, fp);
@@ -182,7 +198,7 @@ void bat_status(int full) {
   blocks = flags.small ? bat.capacity / 7 : bat.capacity / 3;
 }
 
-void update_state() {
+void update_state(void) {
   if (bat.capacity < 20)
     battery_color = colors.low;
   else if (bat.capacity < 60)
@@ -213,7 +229,7 @@ void update_state() {
   }
 
   if (flags.colors == 0)
-    battery_color = "\e[0m";
+    battery_color = "\033[0m";
 
   if (previous_num_length != digit_count(data))
     redraw = 0;
@@ -309,7 +325,7 @@ void print_number(int row) {
   }
 }
 
-void print_charge() {
+void print_charge(void) {
   if (flags.fat) {
     if (!bat.charging) {
       printf("\033[%d;%dH                \033[%d;%dH         "
@@ -355,7 +371,7 @@ void print_charge() {
   }
 }
 
-void print_col(int rows) {
+void print_col(int core_rows) {
   const int diff = blocks - previous_blocks;
   const char *new_sym;
   int step, start, end;
@@ -375,15 +391,15 @@ void print_col(int rows) {
   int index = 0;
   for (int i = start; step * i < step * end; i += step) {
     index = indent + previous_blocks + 2 + i;
-    printf("%s\e[%d;%dH", battery_color, newl + 1, index);
+    printf("%s\033[%d;%dH", battery_color, newl + 1, index);
 
-    for (int j = 0; j < rows; j++) {
-      printf("%s\e[1B\e[1D", new_sym);
+    for (int j = 0; j < core_rows; j++) {
+      printf("%s\033[1B\033[1D", new_sym);
     }
   }
 }
 
-void print_bat() {
+void print_bat(void) {
   const int core_rows = 6 + flags.fat;
 
   if (!redraw) {
@@ -418,7 +434,7 @@ void print_bat() {
   previous_blocks = blocks;
 }
 
-void define_position() {
+void define_position(void) {
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
@@ -426,7 +442,7 @@ void define_position() {
   cols = w.ws_col;
 
   if (flags.inlin && !flags.live) {
-    char buf[2] = {};
+    char buf[2];
     int i = 0;
     char ch = '\0';
 
@@ -452,7 +468,7 @@ void define_position() {
     newl = atoi(buf) + 1;
     const int min_rows = 9 + flags.fat;
     if (rows - newl < min_rows) {
-      for (int i = 0; i < min_rows; i++) {
+      for (int j = 0; j < min_rows; j++) {
         printf("\r\n");
       }
       newl = rows - min_rows + 1;
@@ -460,7 +476,7 @@ void define_position() {
 
     indent = 0;
   } else {
-    printf("\e[2J");
+    printf("\033[2J");
     newl = rows / 2 - 3;
     indent = cols / 2 - 24;
   }
@@ -484,7 +500,7 @@ void big_loop(int opt) {
     printf("\r\n");
 }
 
-void print_small_bat_row() {
+void print_small_bat_row(void) {
   printf("%s██%s", colors.shell, battery_color);
   for (int i = 0; i < 14; i++) {
     if (i < blocks)
@@ -495,7 +511,7 @@ void print_small_bat_row() {
   printf("%s████▊", colors.shell);
 }
 
-void print_small_bat() {
+void print_small_bat(void) {
   printf("\n%s███████████████████\r\n", colors.shell);
 
   print_small_bat_row();
@@ -515,10 +531,10 @@ void print_small_bat() {
   printf("%s███████████████████\n", colors.shell);
 }
 
-void small_loop() {
+void small_loop(void) {
   update_state();
   print_small_bat();
-  printf("\e[5F");
+  printf("\033[5F");
 }
 
 void main_loop(int opt) { flags.small ? small_loop() : big_loop(opt); }
@@ -575,7 +591,7 @@ int handle_input(char c) {
   return 1;
 }
 
-void *event_loop() {
+void *event_loop(void *legolas) {
   char c = '0';
   while (handle_input(c)) {
     c = getchar();
@@ -584,7 +600,7 @@ void *event_loop() {
   return NULL;
 }
 
-void print_help() {
+void print_help(void) {
   puts("Usage:\r\n"
        "  battery [-lsmbdfne]\r\n"
        "\r\n"
@@ -675,7 +691,7 @@ void handle_flags(int argc, char **argv) {
   }
 }
 
-void parse_config() {
+void parse_config(void) {
   char fn[100];
   char *home = getenv("HOME");
   snprintf(fn, 100, "%s/.config/batc/config", home);
@@ -742,39 +758,39 @@ void parse_config() {
   }
 }
 
-void cleanup() {
+void cleanup(void) {
   system("/bin/stty cooked echo");
 
-  printf("\e[0m\e[?25h");
+  printf("\033[0m\033[?25h");
   if (flags.small)
-    printf("\e[5B");
+    printf("\033[5B");
   else if (flags.live)
-    printf("\e[?47l\e[u");
+    printf("\033[?47l\033[u");
   else if (flags.inlin)
-    printf("\e[3B");
+    printf("\033[3B");
   else {
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    printf("\e[%d;0H", w.ws_row);
+    printf("\033[%d;0H", w.ws_row);
   }
 }
 
-void setup() {
+void setup(void) {
   system("/bin/stty raw -echo");
-  printf("\e[?25l");
+  printf("\033[?25l");
 
   if (flags.live && !flags.small)
-    printf("\e[?47h\e[s");
+    printf("\033[?47h\033[s");
 
   if (!flags.colors) {
-    colors.shell = "\e[0m";
-    colors.charge = "\e[0m";
+    colors.shell = "\033[0m";
+    colors.charge = "\033[0m";
   }
 
   strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
 }
 
-void print_minimal() {
+void print_minimal(void) {
   bat_status(1);
   printf("Battery: %d%%\r\nTemperature: %d°\r\n", bat.capacity, bat.temp);
   if (bat.charging)
