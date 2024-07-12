@@ -93,26 +93,26 @@ int digit_count(int num) {
 }
 
 const char *color_to_ansi(char *color) {
-  if (strcmp(color, "none\n") == 0)
+  if (strcmp(color, "none\n") == 0) {
     return "\033[0m\0";
-  else if (strcmp(color, "black\n") == 0)
+  } else if (strcmp(color, "black\n") == 0) {
     return "\033[0;30m\0";
-  else if (strcmp(color, "red\n") == 0)
+  } else if (strcmp(color, "red\n") == 0) {
     return "\033[0;31m\0";
-  else if (strcmp(color, "green\n") == 0)
+  } else if (strcmp(color, "green\n") == 0) {
     return "\033[0;32m\0";
-  else if (strcmp(color, "yellow\n") == 0)
+  } else if (strcmp(color, "yellow\n") == 0) {
     return "\033[0;33m\0";
-  else if (strcmp(color, "blue\n") == 0)
+  } else if (strcmp(color, "blue\n") == 0) {
     return "\033[0;34m\0";
-  else if (strcmp(color, "magenta\n") == 0)
+  } else if (strcmp(color, "magenta\n") == 0) {
     return "\033[0;35m\0";
-  else if (strcmp(color, "cyan\n") == 0)
+  } else if (strcmp(color, "cyan\n") == 0) {
     return "\033[0;36m\0";
-  else if (strcmp(color, "white\n") == 0)
+  } else if (strcmp(color, "white\n") == 0) {
     return "\033[0;37m\0";
-  else if (color[0] == '#') {
-    char r[3], g[3] = "11\0", b[3];
+  } else if (color[0] == '#') {
+    char r[3], g[3], b[3];
 
     strncpy(r, color + 1, 2);
     r[2] = '\0';
@@ -141,7 +141,7 @@ char *get_param(const char *param) {
 
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
-    return (char*)"0";
+    return (char *)"0";
   }
 
   getline(&line, &len, fp);
@@ -189,29 +189,29 @@ void bat_status(int full) {
     free(cf);
     free(cu);
 
-    if (bat.charging == 1)
+    if (bat.charging == 1) {
       bat.power = (charge_full - charge_now) * 60 / (current_now + 1);
-    else
+    } else {
       bat.power = charge_now * 60 / (current_now + 1);
+    }
   }
 
   blocks = flags.small ? bat.capacity / 7 : bat.capacity / 3;
 }
 
 void update_state(void) {
-  if (bat.capacity < 20)
+  if (bat.capacity < 20) {
     battery_color = colors.low;
-  else if (bat.capacity < 60)
+  } else if (bat.capacity < 60) {
     battery_color = colors.mid;
-  else
+  } else {
     battery_color = colors.high;
+  }
 
   int data = 0;
-  switch (flags.mode) {
-  case 'c':
+  if (flags.mode == 'c') {
     data = bat.capacity;
-    break;
-  case 'm':
+  } else if (flags.mode == 'm') {
     data = bat.power;
 
     if (flags.extra_colors == 1) {
@@ -220,23 +220,26 @@ void update_state(void) {
       else
         battery_color = colors.left;
     }
-    break;
-  case 't':
+  } else if (flags.mode == 't') {
     data = bat.temp;
 
-    if (flags.extra_colors == 1)
+    if (flags.extra_colors == 1) {
       battery_color = colors.temp;
+    }
   }
 
-  if (flags.colors == 0)
+  if (flags.colors == 0) {
     battery_color = "\033[0m";
+  }
 
-  if (previous_num_length != digit_count(data))
+  if (previous_num_length != digit_count(data)) {
     redraw = 0;
+  }
   previous_num_length = digit_count(data);
 
-  if (battery_color != previous_battery_color)
+  if (battery_color != previous_battery_color) {
     redraw = 0;
+  }
   previous_battery_color = battery_color;
 }
 
@@ -281,10 +284,11 @@ void print_digit(int digit, int row, int col, int negate) {
   printf("%s\033[%d;%dH", battery_color, row, col);
 
   for (int i = 0; i < 30; i++) {
-    if ((i % 6 < negate) != (chars[i] == '1'))
+    if ((i % 6 < negate) != (chars[i] == '1')) {
       printf("█");
-    else
+    } else {
       printf(" ");
+    }
 
     if (i % 6 == 5) {
       printf("\033[%d;%dH", row + (i + 1) / 6, col);
@@ -296,32 +300,24 @@ void print_digit(int digit, int row, int col, int negate) {
 
 void print_number(int row) {
   int data = 0;
-  switch (flags.mode) {
-  case 'c':
+  if (flags.mode == 'c') {
     data = bat.capacity;
-    break;
-  case 'm':
+  } else if (flags.mode == 'm') {
     data = bat.power;
-    break;
-  case 't':
+  } else if (flags.mode == 't') {
     data = bat.temp;
-    break;
   }
 
-  switch (digit_count(data)) {
-  case 1:
+  int digits = digit_count(data);
+  if (digits == 1) {
     print_digit(data, row, indent + 16, blocks - 13);
-    break;
-  case 2:
+  } else if (digits == 2) {
     print_digit(data / 10, row, indent + 12, blocks - 9);
     print_digit(data % 10, row, indent + 20, blocks - 17);
-    break;
-  case 3:
-  default:
+  } else {
     print_digit(data % 1000 / 100, row, indent + 8, blocks - 5);
     print_digit(data % 100 / 10, row, indent + 16, blocks - 13);
     print_digit(data % 10, row, indent + 24, blocks - 21);
-    break;
   }
 }
 
@@ -419,8 +415,9 @@ void print_bat(void) {
       printf("\033[%d;%dH%s██%s%s%s%s████", newl + i, indent, colors.shell,
              battery_color, fill, empty, colors.shell);
 
-      if (i > 1 && i < core_rows)
+      if (i > 1 && i < core_rows) {
         printf("████");
+      }
     }
 
     printf("\033[%d;%dH████████████████████████████████████████",
@@ -428,8 +425,9 @@ void print_bat(void) {
 
     redraw = 1;
   } else {
-    if (blocks != previous_blocks)
+    if (blocks != previous_blocks) {
       print_col(core_rows);
+    }
   }
   previous_blocks = blocks;
 }
@@ -456,11 +454,13 @@ void define_position(void) {
     write(1, "\033[6n", 4);
     for (ch = 0; ch != 'R'; read(0, &ch, 1)) {
       if (ch >= '0' && ch <= '9') {
-        if (i < 2)
+        if (i < 2) {
           buf[i] = ch;
+        }
         i++;
-      } else if (ch == ';')
+      } else if (ch == ';') {
         i = 99;
+      }
     }
 
     tcsetattr(0, TCSANOW, &restore);
@@ -491,44 +491,49 @@ void big_loop(int opt) {
   print_bat();
   print_charge();
 
-  if (flags.digits)
+  if (flags.digits) {
     print_number(newl + 2);
-  else
+  } else {
     printf("\r\n");
+  }
 
-  if (!flags.inlin)
+  if (!flags.inlin) {
     printf("\r\n");
+  }
 }
 
 void print_small_bat_row(void) {
   printf("%s██%s", colors.shell, battery_color);
   for (int i = 0; i < 14; i++) {
-    if (i < blocks)
+    if (i < blocks) {
       printf("█");
-    else
+    } else {
       printf(" ");
+    }
   }
-  printf("%s████▊", colors.shell);
+  printf("%s████", colors.shell);
 }
 
 void print_small_bat(void) {
-  printf("\n%s███████████████████\r\n", colors.shell);
+  printf("\n%s██████████████████\r\n", colors.shell);
 
   print_small_bat_row();
 
-  if (bat.charging)
+  if (bat.charging) {
     printf("   %s▄▄▄\r\n", colors.charge);
-  else
+  } else {
     printf("               \r\n");
+  }
 
   print_small_bat_row();
 
-  if (bat.charging)
+  if (bat.charging) {
     printf("  %s▀▀▀\r\n", colors.charge);
-  else
+  } else {
     printf("            \r\n");
+  }
 
-  printf("%s███████████████████\n", colors.shell);
+  printf("%s██████████████████\n", colors.shell);
 }
 
 void small_loop(void) {
@@ -560,12 +565,13 @@ int handle_input(char c) {
     main_loop(0);
     break;
   case 'm':
-    if (flags.mode == 'c')
+    if (flags.mode == 'c') {
       flags.mode = 't';
-    else if (flags.mode == 't')
+    } else if (flags.mode == 't') {
       flags.mode = 'm';
-    else if (flags.mode == 'm')
+    } else if (flags.mode == 'm') {
       flags.mode = 'c';
+    }
 
     redraw = 0;
     bat_status(0);
@@ -645,9 +651,10 @@ void handle_flags(int argc, char **argv) {
       {"small", no_argument, NULL, 's'},
       {"help", no_argument, NULL, 'h'},
   };
-  char opt;
-  while ((opt = getopt_long(argc, argv, ":hnlmtM:csidfb:", long_options,
-                            NULL)) != -1) {
+
+  char opt = 0;
+  while (opt != -1) {
+    opt = getopt_long(argc, argv, ":hnlmtM:csidfb:", long_options, NULL);
     switch (opt) {
     case 'n':
       toggle(&flags.colors);
@@ -693,7 +700,7 @@ void handle_flags(int argc, char **argv) {
 
 void parse_config(void) {
   char fn[100];
-  char *home = getenv("HOME");
+  const char *home = getenv("HOME");
   snprintf(fn, 100, "%s/.config/batc/config", home);
 
   if (!access(fn, F_OK)) {
@@ -711,50 +718,53 @@ void parse_config(void) {
       key = strtok(line, " =");
       val = strtok(NULL, " =");
 
-      if (key == NULL || val == NULL)
+      if (key == NULL || val == NULL) {
         continue;
+      }
 
-      if (!strcmp(key, "color_high"))
+      if (!strcmp(key, "color_high")) {
         colors.high = color_to_ansi(val);
-      else if (!strcmp(key, "color_mid"))
+      } else if (!strcmp(key, "color_mid")) {
         colors.mid = color_to_ansi(val);
-      else if (!strcmp(key, "color_low"))
+      } else if (!strcmp(key, "color_low")) {
         colors.low = color_to_ansi(val);
-      else if (!strcmp(key, "color_charge"))
+      } else if (!strcmp(key, "color_charge")) {
         colors.charge = color_to_ansi(val);
-      else if (!strcmp(key, "color_shell"))
+      } else if (!strcmp(key, "color_shell")) {
         colors.shell = color_to_ansi(val);
-      else if (!strcmp(key, "color_temp"))
+      } else if (!strcmp(key, "color_temp")) {
         colors.temp = color_to_ansi(val);
-      else if (!strcmp(key, "color_full"))
+      } else if (!strcmp(key, "color_full")) {
         colors.full = color_to_ansi(val);
-      else if (!strcmp(key, "color_left"))
+      } else if (!strcmp(key, "color_left")) {
         colors.left = color_to_ansi(val);
-      else if (!strcmp(key, "colors"))
+      } else if (!strcmp(key, "colors")) {
         flags.colors = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "live"))
+      } else if (!strcmp(key, "live")) {
         flags.live = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "digits"))
+      } else if (!strcmp(key, "digits")) {
         flags.digits = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "fat"))
+      } else if (!strcmp(key, "fat")) {
         flags.fat = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "small"))
+      } else if (!strcmp(key, "small")) {
         flags.small = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "inline"))
+      } else if (!strcmp(key, "inline")) {
         flags.inlin = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "minimal"))
+      } else if (!strcmp(key, "minimal")) {
         flags.minimal = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "alt_charge"))
+      } else if (!strcmp(key, "alt_charge")) {
         flags.alt_charge = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "extra_colors"))
+      } else if (!strcmp(key, "extra_colors")) {
         flags.extra_colors = strcmp(val, "true\n") ? 0 : 1;
-      else if (!strcmp(key, "mode"))
+      } else if (!strcmp(key, "mode")) {
         flags.mode = val[0];
+      }
     }
 
     fclose(fp);
-    if (line)
+    if (line) {
       free(line);
+    }
   }
 }
 
@@ -762,13 +772,13 @@ void cleanup(void) {
   system("/bin/stty cooked echo");
 
   printf("\033[0m\033[?25h");
-  if (flags.small)
+  if (flags.small) {
     printf("\033[5B");
-  else if (flags.live)
+  } else if (flags.live) {
     printf("\033[?47l\033[u");
-  else if (flags.inlin)
+  } else if (flags.inlin) {
     printf("\033[3B");
-  else {
+  } else {
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     printf("\033[%d;0H", w.ws_row);
@@ -779,8 +789,9 @@ void setup(void) {
   system("/bin/stty raw -echo");
   printf("\033[?25l");
 
-  if (flags.live && !flags.small)
+  if (flags.live && !flags.small) {
     printf("\033[?47h\033[s");
+  }
 
   if (!flags.colors) {
     colors.shell = "\033[0m";
@@ -793,12 +804,13 @@ void setup(void) {
 void print_minimal(void) {
   bat_status(1);
   printf("Battery: %d%%\r\nTemperature: %d°\r\n", bat.capacity, bat.temp);
-  if (bat.charging)
+  if (bat.charging) {
     printf("Time to Full: %dH %dm\r\nCharging: True\r\n", bat.power / 60,
            bat.power % 60);
-  else
+  } else {
     printf("Time Left: %dH %dm\r\nCharging: False\r\n", bat.power / 60,
            bat.power % 60);
+  }
   exit(0);
 }
 
@@ -825,28 +837,26 @@ int main(int argc, char **argv) {
       bat_status(0);
 
       if (!flags.small || flags.digits) {
-        switch (flags.mode) {
-        case 't':
-          if (previous_bat.temp != bat.temp)
+        if (flags.mode == 't') {
+          if (previous_bat.temp != bat.temp) {
             main_loop(0);
-          break;
-        case 'm':
-          if (previous_bat.power != bat.power)
+          }
+        } else if (flags.mode == 'm')
+          if (previous_bat.power != bat.power) {
             main_loop(0);
-          break;
-        }
+          }
       }
+    }
 
-      if (previous_bat.capacity != bat.capacity ||
-          previous_bat.charging != bat.charging) {
-        main_loop(0);
-      }
+    if (previous_bat.capacity != bat.capacity ||
+        previous_bat.charging != bat.charging) {
+      main_loop(0);
+    }
 
-      ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-      if (w.ws_row != rows || w.ws_col != cols) {
-        redraw = 0;
-        main_loop(1);
-      }
+    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    if (w.ws_row != rows || w.ws_col != cols) {
+      redraw = 0;
+      main_loop(1);
     }
   }
 }
