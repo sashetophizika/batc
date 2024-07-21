@@ -69,7 +69,9 @@ color_left = blue # core color in 'm' mode when discharging
 
 color_shell = white # color of the outer shell
 color_charge = cyan # color of the charging symbol
-mode = c
+color_number = NULL # color of the number inside, can improve readability 
+
+mode = c # c for capacity, t for temperature or m for time in minutes
 
 colors = true 
 live = false 

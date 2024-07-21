@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 typedef struct Battery {
@@ -23,6 +24,7 @@ typedef struct Colors {
   const char *left;
   const char *charge;
   const char *shell;
+  const char *number;
 } Colors;
 
 typedef struct Flags {
@@ -42,16 +44,15 @@ typedef struct Flags {
 Battery bat = {0, 0, 0, 0};
 Battery previous_bat = {0, 0, 0, 0};
 
-Colors colors = {
-    .high = "\033[0;32m\0",
-    .mid = "\033[0;33m\0",
-    .low = "\033[0;31m\0",
-    .temp = "\033[0;35m\0",
-    .full = "\033[0;36m\0",
-    .left = "\033[0;34m\0",
-    .charge = "\033[0;36m\0",
-    .shell = "\033[0m\0",
-};
+Colors colors = {.high = "\033[0;32m\0",
+                 .mid = "\033[0;33m\0",
+                 .low = "\033[0;31m\0",
+                 .temp = "\033[0;35m\0",
+                 .full = "\033[0;36m\0",
+                 .left = "\033[0;34m\0",
+                 .charge = "\033[0;36m\0",
+                 .shell = "\033[0m\0",
+                 .number = NULL};
 
 Flags flags = {.colors = 1,
                .live = 0,
@@ -281,17 +282,25 @@ void print_digit(int digit, int row, int col, int negate) {
     chars = "000000000000000000000000000000";
   }
 
-  printf("%s\033[%d;%dH", battery_color, row, col);
+  printf("\033[%d;%dH", row, col);
 
   for (int i = 0; i < 30; i++) {
-    if ((i % 6 < negate) != (chars[i] == '1')) {
-      printf("█");
+    if (colors.number == NULL) {
+      if ((i % 6 < negate) != (chars[i] == '1')) {
+        printf("%s█", battery_color);
+      } else {
+        printf(" ");
+      }
     } else {
-      printf(" ");
+      if (chars[i] == '1') {
+        printf("%s█", colors.number);
+      } else {
+        printf("\033[1C");
+      }
     }
 
     if (i % 6 == 5) {
-      printf("\033[%d;%dH", row + (i + 1) / 6, col);
+      printf("\033[1B\033[6D");
     }
   }
 
@@ -738,6 +747,8 @@ void parse_config(void) {
         colors.full = color_to_ansi(val);
       } else if (!strcmp(key, "color_left")) {
         colors.left = color_to_ansi(val);
+      } else if (!strcmp(key, "color_number")) {
+        colors.number = color_to_ansi(val);
       } else if (!strcmp(key, "colors")) {
         flags.colors = strcmp(val, "true\n") ? 0 : 1;
       } else if (!strcmp(key, "live")) {
