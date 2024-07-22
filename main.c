@@ -855,17 +855,17 @@ int main(int argc, char **argv) {
             main_loop(0);
           }
       }
-    }
 
-    if (previous_bat.capacity != bat.capacity ||
-        previous_bat.charging != bat.charging) {
-      main_loop(0);
-    }
+      if (previous_bat.capacity != bat.capacity ||
+          previous_bat.charging != bat.charging) {
+        main_loop(0);
+      }
 
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-    if (w.ws_row != rows || w.ws_col != cols) {
-      redraw = 0;
-      main_loop(1);
+      ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+      if (w.ws_row != rows || w.ws_col != cols) {
+        redraw = 0;
+        main_loop(1);
+      }
     }
   }
 }
