@@ -13,17 +13,17 @@
 ## Installation
 
 ```bash
-git clone https://github.com/sasheto-phizika/batc.git
+git clone https://github.com/sashetophizika/batc.git
 cd batc && make
-cp batc ~/.local/bin # user installation
-sudo cp batc /usr/bin # system installation
+make install #user installation
+sudo make install # system installation
 ```
 
 ## Usage
 
 ### Basic:
 ```
-batc
+$ batc
 ```
 ### Options:
 

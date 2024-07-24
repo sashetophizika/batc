@@ -94,7 +94,9 @@ int digit_count(int num) {
 }
 
 const char *color_to_ansi(char *color) {
-  if (strcmp(color, "black\n") == 0) {
+  if (strcmp(color, "none\n") == 0) {
+    return "\033[0m\0";
+  } else if (strcmp(color, "black\n") == 0) {
     return "\033[0;30m\0";
   } else if (strcmp(color, "red\n") == 0) {
     return "\033[0;31m\0";
