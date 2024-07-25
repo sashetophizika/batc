@@ -14,9 +14,9 @@ batc: main.c
 	$(CC) main.c -o batc $(CFLAGS)
 
 install:
-	@echo "$(DESTDIR)"
 	@cp ./batc $(DESTDIR)
 	@chmod 775 $(DESTDIR)/batc
+	@echo "batc has been installed to: $(DESTDIR)"
 
 uninstall:
 	@rm $(DESTDIR)/batc
