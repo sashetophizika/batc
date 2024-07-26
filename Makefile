@@ -1,4 +1,9 @@
-CC = clang
+ifneq ($(shell which clang 2> /dev/null),)
+	CC := clang
+else
+	CC := gcc
+endif
+
 CFLAGS += -O3 -Wall -Wextra -Wpedantic \
           -Wformat=2 -Wno-unused-parameter -Wshadow \
           -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
