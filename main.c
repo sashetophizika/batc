@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <pthread.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,11 +9,14 @@
 #include <time.h>
 #include <unistd.h>
 
+#define toggle(x)                                                              \
+  { x = x ? false : true; }
+
 typedef struct Battery {
   int capacity;
-  int charging;
   int temp;
-  int power;
+  int time;
+  bool charging;
 } Battery;
 
 typedef struct Colors {
@@ -28,21 +32,21 @@ typedef struct Colors {
 } Colors;
 
 typedef struct Flags {
-  int colors;
-  int live;
-  int minimal;
-  int small;
-  int digits;
-  int fat;
-  int alt_charge;
-  int extra_colors;
-  int inlin;
+  bool colors;
+  bool live;
+  bool minimal;
+  bool small;
+  bool digits;
+  bool fat;
+  bool alt_charge;
+  bool extra_colors;
+  bool inlin;
   char mode;
   char bat_number[50];
 } Flags;
 
-Battery bat = {0, 0, 0, 0};
-Battery previous_bat = {0, 0, 0, 0};
+Battery bat = {0, 0, 0, false};
+Battery previous_bat = {0, 0, 0, false};
 
 Colors colors = {.high = "\033[0;32m\0",
                  .mid = "\033[0;33m\0",
@@ -54,15 +58,15 @@ Colors colors = {.high = "\033[0;32m\0",
                  .shell = "\033[0m\0",
                  .number = NULL};
 
-Flags flags = {.colors = 1,
-               .live = 0,
-               .minimal = 0,
-               .small = 0,
-               .digits = 0,
-               .fat = 0,
-               .alt_charge = 0,
-               .extra_colors = 1,
-               .inlin = 0,
+Flags flags = {.colors = true,
+               .live = false,
+               .minimal = false,
+               .small = false,
+               .digits = false,
+               .fat = false,
+               .alt_charge = false,
+               .extra_colors = true,
+               .inlin = false,
                .mode = 'c',
                .bat_number = ""};
 
@@ -71,17 +75,14 @@ int indent = 0;
 int rows = 0;
 int cols = 0;
 
-int redraw = 0;
+bool redraw = false;
 int blocks = 0;
 
-char polarity = '-';
 const char *battery_color = "";
 const char *previous_battery_color = "";
 
 int previous_num_length = 0;
 int previous_blocks = 0;
-
-void toggle(int *x) { *x = *x ? 0 : 1; }
 
 int digit_count(int num) {
   int count = 0;
@@ -142,7 +143,8 @@ char *get_param(const char *param) {
 
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
-    return (char *)"0";
+    printf("Error: file %s not found.", fn);
+    exit(0);
   }
 
   getline(&line, &len, fp);
@@ -151,15 +153,20 @@ char *get_param(const char *param) {
   return line;
 }
 
-void bat_status(int full) {
+void bat_status(bool full) {
   previous_bat.capacity = bat.capacity;
   previous_bat.temp = bat.temp;
-  previous_bat.power = bat.power;
+  previous_bat.time = bat.time;
   previous_bat.charging = bat.charging;
 
   char *cap = get_param("capacity");
   bat.capacity = atoi(cap);
   free(cap);
+
+  if (bat.capacity > 100 || bat.capacity < 0) {
+    printf("Erorr: Battery reporting invalid capacity levels");
+    exit(0);
+  }
 
   if (flags.mode == 't' || full) {
     char *temp = get_param("temp");
@@ -168,12 +175,11 @@ void bat_status(int full) {
   }
 
   char *status = get_param("status");
-  if (!strcmp(status, "Discharging\n") || !strcmp(status, "Not charging\n")) {
-    bat.charging = 0;
-    polarity = '-';
+  if (!strcmp(status, "Unknown\n") || !strcmp(status, "Discharging\n") ||
+      !strcmp(status, "Not charging\n")) {
+    bat.charging = false;
   } else {
-    bat.charging = 1;
-    polarity = '+';
+    bat.charging = true;
   }
   free(status);
 
@@ -190,10 +196,10 @@ void bat_status(int full) {
     free(cf);
     free(cu);
 
-    if (bat.charging == 1) {
-      bat.power = (charge_full - charge_now) * 60 / (current_now + 1);
+    if (bat.charging == true) {
+      bat.time = (charge_full - charge_now) * 60 / (current_now + 1);
     } else {
-      bat.power = charge_now * 60 / (current_now + 1);
+      bat.time = charge_now * 60 / (current_now + 1);
     }
   }
 
@@ -213,10 +219,10 @@ void update_state(void) {
   if (flags.mode == 'c') {
     data = bat.capacity;
   } else if (flags.mode == 'm') {
-    data = bat.power;
+    data = bat.time;
 
-    if (flags.extra_colors == 1) {
-      if (bat.charging == 1)
+    if (flags.extra_colors == true) {
+      if (bat.charging == true)
         battery_color = colors.full;
       else
         battery_color = colors.left;
@@ -224,27 +230,27 @@ void update_state(void) {
   } else if (flags.mode == 't') {
     data = bat.temp;
 
-    if (flags.extra_colors == 1) {
+    if (flags.extra_colors == true) {
       battery_color = colors.temp;
     }
   }
 
-  if (flags.colors == 0) {
+  if (flags.colors == false) {
     battery_color = "\033[0m";
   }
 
   if (previous_num_length != digit_count(data)) {
-    redraw = 0;
+    redraw = false;
   }
   previous_num_length = digit_count(data);
 
   if (battery_color != previous_battery_color) {
-    redraw = 0;
+    redraw = false;
   }
   previous_battery_color = battery_color;
 }
 
-void print_digit(int digit, int row, int col, int negate) {
+void print_digit(int digit, int row, int col) {
   const char *chars;
 
   switch (digit) {
@@ -284,19 +290,20 @@ void print_digit(int digit, int row, int col, int negate) {
 
   printf("\033[%d;%dH", row, col);
 
+  int negate = 0;
+  const char *digit_color = colors.number;
+  if (colors.number == NULL) {
+    negate = blocks + indent + 3 - col;
+    digit_color = battery_color;
+  }
+
   for (int i = 0; i < 30; i++) {
-    if (colors.number == NULL) {
-      if ((i % 6 < negate) != (chars[i] == '1')) {
-        printf("%s█", battery_color);
-      } else {
-        printf(" ");
-      }
+    if ((i % 6 < negate) != (chars[i] == '1')) {
+      printf("%s█", digit_color);
+    } else if (colors.number == NULL) {
+      printf(" ");
     } else {
-      if (chars[i] == '1') {
-        printf("%s█", colors.number);
-      } else {
-        printf("\033[1C");
-      }
+      printf("\033[1C");
     }
 
     if (i % 6 == 5) {
@@ -312,67 +319,45 @@ void print_number(int row) {
   if (flags.mode == 'c') {
     data = bat.capacity;
   } else if (flags.mode == 'm') {
-    data = bat.power;
+    data = bat.time;
   } else if (flags.mode == 't') {
     data = bat.temp;
   }
 
   int digits = digit_count(data);
-  if (digits == 1) {
-    print_digit(data, row, indent + 16, blocks - 13);
-  } else if (digits == 2) {
-    print_digit(data / 10, row, indent + 12, blocks - 9);
-    print_digit(data % 10, row, indent + 20, blocks - 17);
-  } else {
-    print_digit(data % 1000 / 100, row, indent + 8, blocks - 5);
-    print_digit(data % 100 / 10, row, indent + 16, blocks - 13);
-    print_digit(data % 10, row, indent + 24, blocks - 21);
+  int col = indent + 4 * digits + 12;
+  for (int i = 0; i < digits; i++) {
+    print_digit(data % 10, row, col - 8 * i);
+    data /= 10;
   }
 }
 
 void print_charge(void) {
-  if (flags.fat) {
-    if (!bat.charging) {
-      printf("\033[%d;%dH                \033[%d;%dH         "
-             " "
-             "\033[%d;%dH           ",
-             newl + 3, indent + 47, newl + 4, indent + 47, newl + 5,
-             indent + 47);
-    } else {
-      if (flags.alt_charge) {
-        printf("\033[%d;%dH   %s███████  \033[%d;%dH    "
-               "██ "
-               " "
-               "\033[%d;%dH███████  ",
-               newl + 3, indent + 47, colors.charge, newl + 4, indent + 47,
-               newl + 5, indent + 47);
-      } else {
-        printf("\033[%d;%dH    %s███████  \033[%d;%dH    "
-               "███"
-               " "
-               "\033[%d;%dH███████  ",
-               newl + 3, indent + 47, colors.charge, newl + 4, indent + 47,
-               newl + 5, indent + 47);
-      }
-    }
+  if (!bat.charging) {
+    printf("%s\033[%d;%dH             "
+           "\033[1B\033[13D             "
+           "\033[1B\033[13D             ",
+           colors.charge, newl + 3, indent + 47);
+  } else if (flags.fat && flags.alt_charge) {
+    printf("%s\033[%d;%dH   ███████ "
+           "\033[1B\033[13D    ██     "
+           "\033[1B\033[13D███████    ",
+           colors.charge, newl + 3, indent + 47);
+  } else if (flags.fat) {
+    printf("%s\033[%d;%dH    ███████  "
+           "\033[1B\033[13D    ███      "
+           "\033[1B\033[13D███████      ",
+           colors.charge, newl + 3, indent + 47);
+  } else if (flags.alt_charge) {
+    printf("%s\033[%d;%dH   ██████  "
+           "\033[1B\033[13D██████     "
+           "\033[1B\033[13D             ",
+           colors.charge, newl + 3, indent + 47);
   } else {
-    if (!bat.charging) {
-      printf("\033[%d;%dH  %s          "
-             "\033[%d;%dH        "
-             " ",
-             newl + 3, indent + 47, colors.charge, newl + 4, indent + 47);
-    } else {
-      if (flags.alt_charge)
-        printf("\033[%d;%dH   %s██████  "
-               "\033[%d;%dH██████ "
-               " ",
-               newl + 3, indent + 47, colors.charge, newl + 4, indent + 47);
-      else
-        printf("\033[%d;%dH   %s████████  "
-               "\033[%d;%dH████████ "
-               " ",
-               newl + 3, indent + 47, colors.charge, newl + 4, indent + 47);
-    }
+    printf("%s\033[%d;%dH   ████████  "
+           "\033[1B\033[13D████████     "
+           "\033[1B\033[13D             ",
+           colors.charge, newl + 3, indent + 47);
   }
 }
 
@@ -383,8 +368,8 @@ void print_col(int core_rows) {
 
   if (diff > 0) {
     step = 1;
-    end = diff + 1;
     start = 1;
+    end = diff + 1;
     new_sym = "█";
   } else {
     step = -1;
@@ -432,7 +417,7 @@ void print_bat(void) {
     printf("\033[%d;%dH████████████████████████████████████████",
            newl + core_rows + 1, indent);
 
-    redraw = 1;
+    redraw = true;
   } else {
     if (blocks != previous_blocks) {
       print_col(core_rows);
@@ -491,8 +476,8 @@ void define_position(void) {
   }
 }
 
-void big_loop(int opt) {
-  if (opt == 1) {
+void big_loop(bool redefine) {
+  if (redefine == true) {
     define_position();
   }
 
@@ -511,7 +496,7 @@ void big_loop(int opt) {
   }
 }
 
-void print_small_bat_row(void) {
+void print_small_bat_row(bool top) {
   printf("%s██%s", colors.shell, battery_color);
   for (int i = 0; i < 14; i++) {
     if (i < blocks) {
@@ -521,27 +506,20 @@ void print_small_bat_row(void) {
     }
   }
   printf("%s████", colors.shell);
+
+  if (!bat.charging) {
+    printf("               \r\n");
+  } else if (top) {
+    printf("   %s▄▄▄\r\n", colors.charge);
+  } else {
+    printf("  %s▀▀▀\r\n", colors.charge);
+  }
 }
 
 void print_small_bat(void) {
   printf("\n%s██████████████████\r\n", colors.shell);
-
-  print_small_bat_row();
-
-  if (bat.charging) {
-    printf("   %s▄▄▄\r\n", colors.charge);
-  } else {
-    printf("               \r\n");
-  }
-
-  print_small_bat_row();
-
-  if (bat.charging) {
-    printf("  %s▀▀▀\r\n", colors.charge);
-  } else {
-    printf("            \r\n");
-  }
-
+  print_small_bat_row(true);
+  print_small_bat_row(false);
   printf("%s██████████████████\n", colors.shell);
 }
 
@@ -551,27 +529,29 @@ void small_loop(void) {
   printf("\033[5F");
 }
 
-void main_loop(int opt) { flags.small ? small_loop() : big_loop(opt); }
+void main_loop(bool redefine) {
+  flags.small ? small_loop() : big_loop(redefine);
+}
 
 int handle_input(char c) {
   switch (c) {
   case 'd':
-    toggle(&flags.digits);
-    redraw = 0;
-    main_loop(0);
+    toggle(flags.digits);
+    redraw = false;
+    main_loop(false);
     break;
   case 'f':
-    toggle(&flags.fat);
-    redraw = 0;
-    main_loop(1);
+    toggle(flags.fat);
+    redraw = false;
+    main_loop(true);
     break;
   case 'c':
-    toggle(&flags.alt_charge);
+    toggle(flags.alt_charge);
     print_charge();
     break;
   case 'e':
-    toggle(&flags.extra_colors);
-    main_loop(0);
+    toggle(flags.extra_colors);
+    main_loop(false);
     break;
   case 'm':
     if (flags.mode == 'c') {
@@ -582,9 +562,9 @@ int handle_input(char c) {
       flags.mode = 'c';
     }
 
-    redraw = 0;
-    bat_status(0);
-    main_loop(0);
+    redraw = false;
+    bat_status(false);
+    main_loop(false);
     break;
   /*case 'a': {*/
   /*  char b[100];*/
@@ -666,31 +646,31 @@ void handle_flags(int argc, char **argv) {
     opt = getopt_long(argc, argv, ":hnlmtM:csidfb:", long_options, NULL);
     switch (opt) {
     case 'n':
-      toggle(&flags.colors);
+      toggle(flags.colors);
       break;
     case 'l':
-      toggle(&flags.live);
+      toggle(flags.live);
       break;
     case 'm':
-      toggle(&flags.minimal);
+      toggle(flags.minimal);
       break;
     case 'i':
-      toggle(&flags.inlin);
+      toggle(flags.inlin);
       break;
     case 's':
-      toggle(&flags.small);
+      toggle(flags.small);
       break;
     case 'd':
-      toggle(&flags.digits);
+      toggle(flags.digits);
       break;
     case 'f':
-      toggle(&flags.fat);
+      toggle(flags.fat);
       break;
     case 'c':
-      toggle(&flags.alt_charge);
+      toggle(flags.alt_charge);
       break;
     case 'e':
-      toggle(&flags.extra_colors);
+      toggle(flags.extra_colors);
       break;
     case 'M':
       flags.mode = optarg[0];
@@ -750,23 +730,23 @@ void parse_config(void) {
       } else if (!strcmp(key, "color_number")) {
         colors.number = color_to_ansi(val);
       } else if (!strcmp(key, "colors")) {
-        flags.colors = strcmp(val, "true\n") ? 0 : 1;
+        flags.colors = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "live")) {
-        flags.live = strcmp(val, "true\n") ? 0 : 1;
+        flags.live = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "digits")) {
-        flags.digits = strcmp(val, "true\n") ? 0 : 1;
+        flags.digits = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "fat")) {
-        flags.fat = strcmp(val, "true\n") ? 0 : 1;
+        flags.fat = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "small")) {
-        flags.small = strcmp(val, "true\n") ? 0 : 1;
+        flags.small = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "inline")) {
-        flags.inlin = strcmp(val, "true\n") ? 0 : 1;
+        flags.inlin = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "minimal")) {
-        flags.minimal = strcmp(val, "true\n") ? 0 : 1;
+        flags.minimal = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "alt_charge")) {
-        flags.alt_charge = strcmp(val, "true\n") ? 0 : 1;
+        flags.alt_charge = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "extra_colors")) {
-        flags.extra_colors = strcmp(val, "true\n") ? 0 : 1;
+        flags.extra_colors = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "mode")) {
         flags.mode = val[0];
       }
@@ -807,6 +787,7 @@ void setup(void) {
   if (!flags.colors) {
     colors.shell = "\033[0m";
     colors.charge = "\033[0m";
+    colors.number = NULL;
   }
 
   strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
@@ -816,13 +797,12 @@ void print_minimal(void) {
   bat_status(1);
   printf("Battery: %d%%\r\nTemperature: %d°\r\n", bat.capacity, bat.temp);
   if (bat.charging) {
-    printf("Time to Full: %dH %dm\r\nCharging: True\r\n", bat.power / 60,
-           bat.power % 60);
+    printf("Time to Full: %dH %dm\r\nCharging: True\r\n", bat.time / 60,
+           bat.time % 60);
   } else {
-    printf("Time Left: %dH %dm\r\nCharging: False\r\n", bat.power / 60,
-           bat.power % 60);
+    printf("Time Left: %dH %dm\r\nCharging: False\r\n", bat.time / 60,
+           bat.time % 60);
   }
-  exit(0);
 }
 
 int main(int argc, char **argv) {
@@ -833,40 +813,38 @@ int main(int argc, char **argv) {
 
   if (flags.minimal) {
     print_minimal();
+    exit(0);
   }
 
-  bat_status(0);
-  main_loop(1);
+  bat_status(false);
+  main_loop(true);
 
   struct winsize w;
   if (flags.live) {
     pthread_t thread;
     pthread_create(&thread, NULL, event_loop, NULL);
 
-    while (1) {
+    while (true) {
       usleep(200000);
       bat_status(0);
 
       if (!flags.small || flags.digits) {
-        if (flags.mode == 't') {
-          if (previous_bat.temp != bat.temp) {
-            main_loop(0);
-          }
-        } else if (flags.mode == 'm')
-          if (previous_bat.power != bat.power) {
-            main_loop(0);
-          }
+        if (flags.mode == 't' && previous_bat.temp != bat.temp) {
+          main_loop(false);
+        } else if (flags.mode == 'm' && previous_bat.time != bat.time) {
+          main_loop(false);
+        }
       }
 
       if (previous_bat.capacity != bat.capacity ||
           previous_bat.charging != bat.charging) {
-        main_loop(0);
+        main_loop(false);
       }
 
       ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
       if (w.ws_row != rows || w.ws_col != cols) {
-        redraw = 0;
-        main_loop(1);
+        redraw = false;
+        main_loop(true);
       }
     }
   }
