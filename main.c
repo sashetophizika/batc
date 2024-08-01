@@ -447,10 +447,8 @@ void define_position(void) {
 
     write(1, "\033[6n", 4);
     for (ch = 0; ch != 'R'; read(0, &ch, 1)) {
-      if (ch >= '0' && ch <= '9') {
-        if (i < 2) {
-          buf[i] = ch;
-        }
+      if (ch >= '0' && ch <= '9' && i < 2) {
+        buf[i] = ch;
         i++;
       } else if (ch == ';') {
         i = 99;
@@ -472,7 +470,7 @@ void define_position(void) {
   } else {
     printf("\033[2J");
     newl = rows / 2 - 3;
-    indent = cols / 2 - 24;
+    indent = cols / 2 - 21;
   }
 }
 
