@@ -802,11 +802,15 @@ void setup(void) {
   }
 
   if (flags.bat_number[0] == '\0') {
-    if (opendir("/sys/class/power_supply/BAT0") == NULL) {
-      printf("/sys/class/power_supply/BAT0 does not exist.\r\n");
-      exit(0);
+    struct dirent *bat_dirs;
+    char bat_index = '9';
+    DIR *power_supply = opendir("/sys/class/power_supply");
+    while ((bat_dirs = readdir(power_supply))) {
+      if (bat_dirs->d_name[0] == 'B' && bat_dirs->d_name[3] < bat_index) {
+        bat_index = bat_dirs->d_name[3];
+      }
     }
-    strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
+    sprintf(flags.bat_number, "/sys/class/power_supply/BAT%c", bat_index);
   }
 }
 
