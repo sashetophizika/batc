@@ -780,7 +780,7 @@ void cleanup(void) {
     printf("\033[?47l\033[u");
   } else if (flags.inlin) {
     printf("\033[3B");
-  } else {
+  } else if (!flags.minimal) {
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
     printf("\033[%d;0H", w.ws_row);
