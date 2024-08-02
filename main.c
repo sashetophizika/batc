@@ -1,3 +1,4 @@
+#include <dirent.h>
 #include <getopt.h>
 #include <pthread.h>
 #include <stdbool.h>
@@ -675,7 +676,11 @@ void handle_flags(int argc, char **argv) {
       break;
     case 'b': {
       char buffer[50];
-      sprintf(buffer, "/sys/class/power_supply/bat%s", optarg);
+      sprintf(buffer, "/sys/class/power_supply/BAT%s", optarg);
+      if (opendir(buffer) == NULL) {
+        printf("%s does not exist.", buffer);
+        exit(0);
+      }
       strcpy(flags.bat_number, buffer);
     } break;
     case 'h':
@@ -747,6 +752,14 @@ void parse_config(void) {
         flags.extra_colors = strcmp(val, "true\n") ? false : true;
       } else if (!strcmp(key, "mode")) {
         flags.mode = val[0];
+      } else if (!strcmp(key, "bat_number")) {
+        char buffer[50];
+        sprintf(buffer, "/sys/class/power_supply/BAT%c", val[0]);
+        if (opendir(buffer) == NULL) {
+          printf("%s does not exist.", buffer);
+          exit(0);
+        }
+        strcpy(flags.bat_number, buffer);
       }
     }
 
@@ -788,7 +801,13 @@ void setup(void) {
     colors.number = NULL;
   }
 
-  strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
+  if (flags.bat_number[0] == '\0') {
+    if (opendir("/sys/class/power_supply/BAT0") == NULL) {
+      printf("/sys/class/power_supply/BAT0 does not exist.\r\n");
+      exit(0);
+    }
+    strcpy(flags.bat_number, "/sys/class/power_supply/BAT0");
+  }
 }
 
 void print_minimal(void) {
@@ -804,10 +823,10 @@ void print_minimal(void) {
 }
 
 int main(int argc, char **argv) {
+  atexit(cleanup);
   parse_config();
   handle_flags(argc, argv);
   setup();
-  atexit(cleanup);
 
   if (flags.minimal) {
     print_minimal();

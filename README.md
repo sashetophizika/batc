@@ -72,6 +72,7 @@ color_charge = cyan # color of the charging symbol
 color_number = NULL # color of the number inside, can improve readability 
 
 mode = c # c for capacity, t for temperature or m for time in minutes
+bat_number = 0 # read from /sys/class/power_supply/BAT0
 
 colors = true 
 live = false 
