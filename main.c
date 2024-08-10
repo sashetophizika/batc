@@ -350,7 +350,7 @@ void print_charge(void) {
            "\033[1B\033[13D███████      ",
            colors.charge, newl + 3, indent + 47);
   } else if (flags.alt_charge) {
-    printf("%s\033[%d;%dH   ██████  "
+    printf("%s\033[%d;%dH  ██████  "
            "\033[1B\033[13D██████     "
            "\033[1B\033[13D             ",
            colors.charge, newl + 3, indent + 47);
@@ -434,7 +434,7 @@ void define_position(void) {
   rows = w.ws_row;
   cols = w.ws_col;
 
-  if (flags.inlin && !flags.live) {
+  if (flags.inlin) {
     char buf[2];
     int i = 0;
     char ch = '\0';
@@ -486,11 +486,11 @@ void big_loop(bool redefine) {
 
   if (flags.digits) {
     print_number(newl + 2);
-  } else {
-    printf("\r\n");
   }
 
-  if (!flags.inlin) {
+  if (flags.inlin) {
+    printf("\033[%d;0H", newl + 5 + flags.fat);
+  } else {
     printf("\r\n");
   }
 }
@@ -776,10 +776,10 @@ void cleanup(void) {
   printf("\033[0m\033[?25h");
   if (flags.small) {
     printf("\033[5B");
-  } else if (flags.live) {
-    printf("\033[?47l\033[u");
   } else if (flags.inlin) {
     printf("\033[3B");
+  } else if (flags.live) {
+    printf("\033[?47l\033[u");
   } else if (!flags.minimal) {
     struct winsize w;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
@@ -791,7 +791,7 @@ void setup(void) {
   system("/bin/stty raw -echo");
   printf("\033[?25l");
 
-  if (flags.live && !flags.small) {
+  if (flags.live && !(flags.small || flags.inlin)) {
     printf("\033[?47h\033[s");
   }
 
