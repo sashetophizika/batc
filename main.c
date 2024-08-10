@@ -350,8 +350,8 @@ void print_charge(void) {
            "\033[1B\033[13D███████      ",
            colors.charge, newl + 3, indent + 47);
   } else if (flags.alt_charge) {
-    printf("%s\033[%d;%dH  ██████  "
-           "\033[1B\033[13D██████     "
+    printf("%s\033[%d;%dH   ██████ "
+           "\033[1B\033[13D ██████    "
            "\033[1B\033[13D             ",
            colors.charge, newl + 3, indent + 47);
   } else {
@@ -418,6 +418,11 @@ void print_bat(void) {
     printf("\033[%d;%dH████████████████████████████████████████",
            newl + core_rows + 1, indent);
 
+    if (!flags.fat && flags.live) {
+      printf("\033[%d;%dH    \033[%d;%dH                                       "
+             "      \r\n",
+             newl + core_rows, indent + 41, newl + core_rows + 2, indent);
+    }
     redraw = true;
   } else {
     if (blocks != previous_blocks) {
@@ -437,7 +442,7 @@ void define_position(void) {
   if (flags.inlin) {
     char buf[2];
     int i = 0;
-    char ch = '\0';
+    char c = '\0';
 
     struct termios term, restore;
 
@@ -447,11 +452,11 @@ void define_position(void) {
     term.c_lflag &= ~(ICANON | ECHO);
 
     write(1, "\033[6n", 4);
-    for (ch = 0; ch != 'R'; read(0, &ch, 1)) {
-      if (ch >= '0' && ch <= '9' && i < 2) {
-        buf[i] = ch;
+    for (c = 0; c != 'R'; read(0, &c, 1)) {
+      if (c >= '0' && c <= '9' && i < 2) {
+        buf[i] = c;
         i++;
-      } else if (ch == ';') {
+      } else if (c == ';') {
         i = 99;
       }
     }
@@ -459,7 +464,7 @@ void define_position(void) {
     tcsetattr(0, TCSANOW, &restore);
 
     newl = atoi(buf) + 1;
-    const int min_rows = 9 + flags.fat;
+    const int min_rows = 10 + flags.fat;
     if (rows - newl < min_rows) {
       for (int j = 0; j < min_rows; j++) {
         printf("\r\n");
@@ -489,7 +494,7 @@ void big_loop(bool redefine) {
   }
 
   if (flags.inlin) {
-    printf("\033[%d;0H", newl + 5 + flags.fat);
+    printf("\033[%d;0H", newl - 1);
   } else {
     printf("\r\n");
   }
@@ -542,7 +547,7 @@ int handle_input(char c) {
   case 'f':
     toggle(flags.fat);
     redraw = false;
-    main_loop(true);
+    main_loop(false);
     break;
   case 'c':
     toggle(flags.alt_charge);
@@ -777,7 +782,7 @@ void cleanup(void) {
   if (flags.small) {
     printf("\033[5B");
   } else if (flags.inlin) {
-    printf("\033[3B");
+    printf("\033[3B\033[%d;0H", newl + 8 + flags.fat);
   } else if (flags.live) {
     printf("\033[?47l\033[u");
   } else if (!flags.minimal) {
