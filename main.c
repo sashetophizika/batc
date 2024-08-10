@@ -421,7 +421,7 @@ void print_bat(void) {
     if (!flags.fat && flags.live) {
       printf("\033[%d;%dH    \033[%d;%dH                                       "
              "      \r\n",
-             newl + core_rows, indent + 41, newl + core_rows + 2, indent);
+             newl + core_rows, indent + 40 + flags.inlin, newl + core_rows + 2, indent);
     }
     redraw = true;
   } else {
