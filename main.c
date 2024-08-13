@@ -326,6 +326,10 @@ void print_number(int row) {
   }
 
   int digits = digit_count(data);
+  if (digits > 3) {
+    digits = 3;
+  }
+
   int col = indent + 4 * digits + 12;
   for (int i = 0; i < digits; i++) {
     print_digit(data % 10, row, col - 8 * i);
@@ -421,7 +425,8 @@ void print_bat(void) {
     if (!flags.fat && flags.live) {
       printf("\033[%d;%dH    \033[%d;%dH                                       "
              "      \r\n",
-             newl + core_rows, indent + 40 + flags.inlin, newl + core_rows + 2, indent);
+             newl + core_rows, indent + 40 + flags.inlin, newl + core_rows + 2,
+             indent);
     }
     redraw = true;
   } else {
