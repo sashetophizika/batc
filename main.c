@@ -76,7 +76,7 @@ int indent = 0;
 int rows = 0;
 int cols = 0;
 
-bool redraw = false;
+bool redraw = true;
 int blocks = 0;
 
 const char *battery_color = "";
@@ -241,66 +241,95 @@ void update_state(void) {
   }
 
   if (previous_num_length != digit_count(data)) {
-    redraw = false;
+    redraw = true;
   }
   previous_num_length = digit_count(data);
 
   if (battery_color != previous_battery_color) {
-    redraw = false;
+    redraw = true;
   }
   previous_battery_color = battery_color;
 }
 
 void print_digit(int digit, int row, int col) {
-  const char *chars;
+  int bitstring;
 
-  switch (digit) {
-  case 0:
-    chars = "111111110011110011110011111111";
+  switch (digit) {          // Reverse binary
+  case 0:                   // 111111
+    bitstring = 1070546175; // 110011
+                            // 110011
+                            // 110011
+                            // 111111
     break;
-  case 1:
-    chars = "111100001100001100001100111111";
+  case 1:                   // 111100
+    bitstring = 1060160271; // 001100
+                            // 001100
+                            // 001100
+                            // 111111
     break;
-  case 2:
-    chars = "111111000011111111110000111111";
+  case 2:                   // 111111
+    bitstring = 1058012223; // 000011
+                            // 111111
+                            // 110000
+                            // 111111
     break;
-  case 3:
-    chars = "111111000011111111000011111111";
+  case 3:                   // 111111
+    bitstring = 1069808703; // 000011
+                            // 111111
+                            // 000011
+                            // 111111
     break;
-  case 4:
-    chars = "110011110011111111000011000011";
+  case 4:                  /// 110011
+    bitstring = 818150643; /// 110011
+                           /// 111111
+                           /// 000011
+                           /// 000011
     break;
-  case 5:
-    chars = "111111110000111111000011111111";
+  case 5:                   // 111111
+    bitstring = 1069805823; // 110000
+                            // 111111
+                            // 000011
+                            // 111111
     break;
-  case 6:
-    chars = "111111110000111111110011111111";
+  case 6:                   // 111111
+    bitstring = 1070592255; // 110000
+                            // 111111
+                            // 110011
+                            // 111111
     break;
-  case 7:
-    chars = "111111000011000011000011000011";
+  case 7:                  /// 111111
+    bitstring = 818089023; /// 000011
+                           /// 000011
+                           /// 000011
+                           /// 000011
     break;
-  case 8:
-    chars = "111111110011111111110011111111";
+  case 8:                   // 111111
+    bitstring = 1070595327; // 110011
+                            // 111111
+                            // 110011
+                            // 111111
     break;
-  case 9:
-    chars = "111111110011111111000011111111";
+  case 9:                   // 111111
+    bitstring = 1069808895; // 110011
+                            // 111111
+                            // 000011
+                            // 111111
     break;
   default:
-    chars = "000000000000000000000000000000";
+    bitstring = 0;
   }
-
-  printf("\033[%d;%dH", row, col);
 
   int negate = 0;
   const char *digit_color = colors.number;
-  if (colors.number == NULL) {
+  if (colors.number == NULL || !flags.digits) {
     negate = blocks + indent + 3 - col;
     digit_color = battery_color;
   }
 
+  printf("\033[%d;%dH%s", row, col, digit_color);
   for (int i = 0; i < 30; i++) {
-    if ((i % 6 < negate) != (chars[i] == '1')) {
-      printf("%s█", digit_color);
+    if ((i % 6 < negate) != (bitstring >> i & 1)) {
+      printf("█");
     } else if (colors.number == NULL) {
       printf(" ");
     } else {
@@ -326,13 +355,11 @@ void print_number(int row) {
   }
 
   int digits = digit_count(data);
-  if (digits > 3) {
-    digits = 3;
-  }
+  digits = digits > 4 ? 4 : digits;
 
   int col = indent + 4 * digits + 12;
   for (int i = 0; i < digits; i++) {
-    print_digit(data % 10, row, col - 8 * i);
+    print_digit(!flags.digits ? 42 : data % 10, row, col - 8 * i);
     data /= 10;
   }
 }
@@ -397,7 +424,7 @@ void print_col(int core_rows) {
 void print_bat(void) {
   const int core_rows = 6 + flags.fat;
 
-  if (!redraw) {
+  if (redraw) {
     const char *block_string = "█████████████████████████████████████\0";
     const char *empty_string = "                                     \0";
     char fill[150], empty[50];
@@ -428,7 +455,7 @@ void print_bat(void) {
              newl + core_rows, indent + 40 + flags.inlin, newl + core_rows + 2,
              indent);
     }
-    redraw = true;
+    redraw = false;
   } else {
     if (blocks != previous_blocks) {
       print_col(core_rows);
@@ -493,10 +520,7 @@ void big_loop(bool redefine) {
   update_state();
   print_bat();
   print_charge();
-
-  if (flags.digits) {
-    print_number(newl + 2);
-  }
+  print_number(newl + 2);
 
   if (flags.inlin) {
     printf("\033[%d;0H", newl - 1);
@@ -546,12 +570,11 @@ int handle_input(char c) {
   switch (c) {
   case 'd':
     toggle(flags.digits);
-    redraw = false;
     main_loop(false);
     break;
   case 'f':
     toggle(flags.fat);
-    redraw = false;
+    redraw = true;
     main_loop(false);
     break;
   case 'c':
@@ -571,7 +594,7 @@ int handle_input(char c) {
       flags.mode = 'c';
     }
 
-    redraw = false;
+    redraw = true;
     bat_status(false);
     main_loop(false);
     break;
@@ -874,7 +897,7 @@ int main(int argc, char **argv) {
 
       ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
       if (w.ws_row != rows || w.ws_col != cols) {
-        redraw = false;
+        redraw = true;
         main_loop(true);
       }
     }
