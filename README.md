@@ -15,7 +15,7 @@
 ```bash
 git clone https://github.com/sashetophizika/batc.git
 cd batc && make
-make install #user installation
+make install # user installation
 sudo make install # system installation
 ```
 
@@ -59,20 +59,20 @@ You can create `~/.config/batc/config` in order to change the colors and the def
 # colors can be [red | green | yellow | blue | magenta | cyan | white | black | none]
 # or a hex code (e.g., #0000ff)
 
-color_high = green # core color between 60-100%
-color_mid = yellow # core color between 20-60%
-color_low = red # core color between 0-20%
+color_high = green   # core color between 60-100%
+color_mid = yellow   # core color between 20-60%
+color_low = red      # core color between 0-20%
 
 color_temp = magenta # core color in 't' mode
-color_full = cyan # core color in 'm' mode when charging
-color_left = blue # core color in 'm' mode when discharging
+color_full = cyan    # core color in 'm' mode when charging
+color_left = blue    # core color in 'm' mode when discharging
 
-color_shell = white # color of the outer shell
-color_charge = cyan # color of the charging symbol
-color_number = NULL # color of the number inside, can improve readability 
+color_shell = white  # color of the outer shell
+color_charge = cyan  # color of the charging symbol
+color_number = NULL  # color of the number inside, can improve readability
 
-mode = c # c for capacity, t for temperature or m for time in minutes
-bat_number = 0 # read from /sys/class/power_supply/BAT0
+mode = c             # c for capacity, t for temperature or m for time in minutes
+bat_number = 0       # read from /sys/class/power_supply/BAT0
 
 colors = true 
 live = false 
