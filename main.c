@@ -254,18 +254,18 @@ void update_state(void) {
 void print_digit(int digit, int row, int col) {
   int bitstring;
 
-  switch (digit) {          // Reverse binary
+  switch (digit) {
   case 0:                   // 111111
     bitstring = 1070546175; // 110011
                             // 110011
                             // 110011
                             // 111111
     break;
-  case 1:                   // 111100
+  case 1:                   // 111111
     bitstring = 1060160271; // 001100
                             // 001100
                             // 001100
-                            // 111111
+                            // 001111
     break;
   case 2:                   // 111111
     bitstring = 1058012223; // 000011
@@ -274,16 +274,16 @@ void print_digit(int digit, int row, int col) {
                             // 111111
     break;
   case 3:                   // 111111
-    bitstring = 1069808703; // 000011
+    bitstring = 1069808703; // 110000
                             // 111111
-                            // 000011
+                            // 110000
                             // 111111
     break;
-  case 4:                  /// 110011
-    bitstring = 818150643; /// 110011
+  case 4:                  /// 110000
+    bitstring = 818150643; /// 110000
                            /// 111111
-                           /// 000011
-                           /// 000011
+                           /// 110011
+                           /// 110011
     break;
   case 5:                   // 111111
     bitstring = 1069805823; // 110000
@@ -292,16 +292,16 @@ void print_digit(int digit, int row, int col) {
                             // 111111
     break;
   case 6:                   // 111111
-    bitstring = 1070592255; // 110000
+    bitstring = 1070592255; // 110011
                             // 111111
-                            // 110011
+                            // 000011
                             // 111111
     break;
-  case 7:                  /// 111111
-    bitstring = 818089023; /// 000011
-                           /// 000011
-                           /// 000011
-                           /// 000011
+  case 7:                  /// 110000
+    bitstring = 818089023; /// 110000
+                           /// 110000
+                           /// 110000
+                           /// 111111
     break;
   case 8:                   // 111111
     bitstring = 1070595327; // 110011
@@ -310,9 +310,9 @@ void print_digit(int digit, int row, int col) {
                             // 111111
     break;
   case 9:                   // 111111
-    bitstring = 1069808895; // 110011
+    bitstring = 1069808895; // 110000
                             // 111111
-                            // 000011
+                            // 110011
                             // 111111
     break;
   default:
@@ -860,9 +860,10 @@ void print_minimal(void) {
 }
 
 int main(int argc, char **argv) {
-  atexit(cleanup);
   parse_config();
   handle_flags(argc, argv);
+
+  atexit(cleanup);
   setup();
 
   if (flags.minimal) {
