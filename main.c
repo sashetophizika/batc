@@ -724,82 +724,87 @@ void handle_flags(int argc, char **argv) {
 }
 
 void parse_config(void) {
-  char fn[100];
+  char file_name[100];
   const char *home = getenv("HOME");
-  snprintf(fn, 100, "%s/.config/batc/config", home);
+  if (home == NULL) {
+    return;
+  }
 
-  if (!access(fn, F_OK)) {
-    FILE *fp = fopen(fn, "r");
-    char *line = NULL;
-    size_t len = 0;
+  snprintf(file_name, 100, "%s/.config/batc/config", home);
+  if (access(file_name, F_OK)) {
+    return;
+  }
 
-    if (fp == NULL) {
-      return;
+  FILE *file_pointer = fopen(file_name, "r");
+  char *line = NULL;
+  size_t len = 0;
+
+  if (file_pointer == NULL) {
+    return;
+  }
+
+  char *key, *val;
+
+  while (getline(&line, &len, file_pointer) != -1) {
+    key = strtok(line, " =");
+    val = strtok(NULL, " =");
+
+    if (key == NULL || val == NULL) {
+      continue;
     }
 
-    char *key, *val;
-
-    while (getline(&line, &len, fp) != -1) {
-      key = strtok(line, " =");
-      val = strtok(NULL, " =");
-
-      if (key == NULL || val == NULL) {
-        continue;
+    if (!strcmp(key, "color_high")) {
+      colors.high = color_to_ansi(val);
+    } else if (!strcmp(key, "color_mid")) {
+      colors.mid = color_to_ansi(val);
+    } else if (!strcmp(key, "color_low")) {
+      colors.low = color_to_ansi(val);
+    } else if (!strcmp(key, "color_charge")) {
+      colors.charge = color_to_ansi(val);
+    } else if (!strcmp(key, "color_shell")) {
+      colors.shell = color_to_ansi(val);
+    } else if (!strcmp(key, "color_temp")) {
+      colors.temp = color_to_ansi(val);
+    } else if (!strcmp(key, "color_full")) {
+      colors.full = color_to_ansi(val);
+    } else if (!strcmp(key, "color_left")) {
+      colors.left = color_to_ansi(val);
+    } else if (!strcmp(key, "color_number")) {
+      colors.number = color_to_ansi(val);
+    } else if (!strcmp(key, "colors")) {
+      flags.colors = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "live")) {
+      flags.live = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "digits")) {
+      flags.digits = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "fat")) {
+      flags.fat = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "small")) {
+      flags.small = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "inline")) {
+      flags.inlin = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "minimal")) {
+      flags.minimal = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "alt_charge")) {
+      flags.alt_charge = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "extra_colors")) {
+      flags.extra_colors = strcmp(val, "true\n") ? false : true;
+    } else if (!strcmp(key, "mode")) {
+      flags.mode = val[0];
+    } else if (!strcmp(key, "bat_number")) {
+      char buffer[50];
+      sprintf(buffer, "/sys/class/power_supply/BAT%c", val[0]);
+      if (opendir(buffer) == NULL) {
+        printf("%s does not exist.", buffer);
+        exit(0);
       }
-
-      if (!strcmp(key, "color_high")) {
-        colors.high = color_to_ansi(val);
-      } else if (!strcmp(key, "color_mid")) {
-        colors.mid = color_to_ansi(val);
-      } else if (!strcmp(key, "color_low")) {
-        colors.low = color_to_ansi(val);
-      } else if (!strcmp(key, "color_charge")) {
-        colors.charge = color_to_ansi(val);
-      } else if (!strcmp(key, "color_shell")) {
-        colors.shell = color_to_ansi(val);
-      } else if (!strcmp(key, "color_temp")) {
-        colors.temp = color_to_ansi(val);
-      } else if (!strcmp(key, "color_full")) {
-        colors.full = color_to_ansi(val);
-      } else if (!strcmp(key, "color_left")) {
-        colors.left = color_to_ansi(val);
-      } else if (!strcmp(key, "color_number")) {
-        colors.number = color_to_ansi(val);
-      } else if (!strcmp(key, "colors")) {
-        flags.colors = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "live")) {
-        flags.live = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "digits")) {
-        flags.digits = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "fat")) {
-        flags.fat = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "small")) {
-        flags.small = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "inline")) {
-        flags.inlin = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "minimal")) {
-        flags.minimal = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "alt_charge")) {
-        flags.alt_charge = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "extra_colors")) {
-        flags.extra_colors = strcmp(val, "true\n") ? false : true;
-      } else if (!strcmp(key, "mode")) {
-        flags.mode = val[0];
-      } else if (!strcmp(key, "bat_number")) {
-        char buffer[50];
-        sprintf(buffer, "/sys/class/power_supply/BAT%c", val[0]);
-        if (opendir(buffer) == NULL) {
-          printf("%s does not exist.", buffer);
-          exit(0);
-        }
-        strcpy(flags.bat_number, buffer);
-      }
+      strcpy(flags.bat_number, buffer);
     }
+  }
 
-    fclose(fp);
-    if (line) {
-      free(line);
-    }
+  fclose(file_pointer);
+  if (line) {
+    free(line);
   }
 }
 

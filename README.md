@@ -69,7 +69,7 @@ color_left = blue    # core color in 'm' mode when discharging
 
 color_shell = white  # color of the outer shell
 color_charge = cyan  # color of the charging symbol
-color_number = NULL  # color of the number inside, can improve readability
+color_number = NULL  # color of the number inside, remove line for default
 
 mode = c             # c for capacity, t for temperature or m for time in minutes
 bat_number = 0       # read from /sys/class/power_supply/BAT0
