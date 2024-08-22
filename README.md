@@ -50,7 +50,7 @@ In live mode you can use some keybinds.
 
 ## Configuration
 
-You can create `~/.config/batc/config` in order to change the colors and the default flags (the flags then become toggles that do the opposite).
+You can create a file named `~/.config/batc/batc.conf` in order to change the colors and the default flags (the flags then become toggles that do the opposite).
 
 ### Default configuration:
 
