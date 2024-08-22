@@ -730,9 +730,12 @@ void parse_config(void) {
     return;
   }
 
-  snprintf(file_name, 100, "%s/.config/batc/config", home);
+  snprintf(file_name, 100, "%s/.config/batc/batc.conf", home);
   if (access(file_name, F_OK)) {
-    return;
+    snprintf(file_name, 100, "%s/.config/batc/config", home);
+    if (access(file_name, F_OK)) {
+      return;
+    }
   }
 
   FILE *file_pointer = fopen(file_name, "r");
@@ -750,6 +753,10 @@ void parse_config(void) {
     val = strtok(NULL, " =");
 
     if (key == NULL || val == NULL) {
+      continue;
+    }
+
+    if (key[0] == '#') {
       continue;
     }
 
