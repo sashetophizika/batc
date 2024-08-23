@@ -1,4 +1,4 @@
-# Battery
+# Batc
 
 ### Simple utility to monitor the battery in a stylish manner.
 
