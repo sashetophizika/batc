@@ -738,17 +738,17 @@ void parse_config(void) {
     }
   }
 
-  FILE *file_pointer = fopen(file_name, "r");
+  FILE *config_file = fopen(file_name, "r");
   char *line = NULL;
   size_t len = 0;
 
-  if (file_pointer == NULL) {
+  if (config_file == NULL) {
     return;
   }
 
   char *key, *val;
 
-  while (getline(&line, &len, file_pointer) != -1) {
+  while (getline(&line, &len, config_file) != -1) {
     key = strtok(line, " =");
     val = strtok(NULL, " =");
 
@@ -801,15 +801,17 @@ void parse_config(void) {
     } else if (!strcmp(key, "bat_number")) {
       char buffer[50];
       sprintf(buffer, "/sys/class/power_supply/BAT%c", val[0]);
-      if (opendir(buffer) == NULL) {
+      DIR *power_supply_dir = opendir(buffer);
+      if (power_supply_dir == NULL) {
         printf("%s does not exist.", buffer);
         exit(0);
       }
       strcpy(flags.bat_number, buffer);
+      closedir(power_supply_dir);
     }
   }
 
-  fclose(file_pointer);
+  fclose(config_file);
   if (line) {
     free(line);
   }
@@ -849,13 +851,14 @@ void setup(void) {
   if (flags.bat_number[0] == '\0') {
     struct dirent *bat_dirs;
     char bat_index = '9';
-    DIR *power_supply = opendir("/sys/class/power_supply");
-    while ((bat_dirs = readdir(power_supply))) {
+    DIR *power_supply_dir = opendir("/sys/class/power_supply");
+    while ((bat_dirs = readdir(power_supply_dir))) {
       if (bat_dirs->d_name[0] == 'B' && bat_dirs->d_name[3] < bat_index) {
         bat_index = bat_dirs->d_name[3];
       }
     }
     sprintf(flags.bat_number, "/sys/class/power_supply/BAT%c", bat_index);
+    closedir(power_supply_dir);
   }
 }
 
