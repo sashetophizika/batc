@@ -17,6 +17,7 @@ typedef struct Battery {
   int capacity;
   int temp;
   int time;
+  int health;
   bool charging;
 } Battery;
 
@@ -25,6 +26,7 @@ typedef struct Colors {
   const char *mid;
   const char *low;
   const char *temp;
+  const char *health;
   const char *full;
   const char *left;
   const char *charge;
@@ -46,13 +48,14 @@ typedef struct Flags {
   char bat_number[50];
 } Flags;
 
-Battery bat = {0, 0, 0, false};
-Battery previous_bat = {0, 0, 0, false};
+Battery bat = {0, 0, 0, 0, false};
+Battery previous_bat = {0, 0, 0, 0, false};
 
 Colors colors = {.high = "\033[0;32m\0",
                  .mid = "\033[0;33m\0",
                  .low = "\033[0;31m\0",
                  .temp = "\033[0;35m\0",
+                 .health = "\033[0;31m\0",
                  .full = "\033[0;36m\0",
                  .left = "\033[0;34m\0",
                  .charge = "\033[0;36m\0",
@@ -158,6 +161,7 @@ void bat_status(bool full) {
   previous_bat.capacity = bat.capacity;
   previous_bat.temp = bat.temp;
   previous_bat.time = bat.time;
+  previous_bat.health = bat.health;
   previous_bat.charging = bat.charging;
 
   char *cap = get_param("capacity");
@@ -204,6 +208,19 @@ void bat_status(bool full) {
     }
   }
 
+  if (flags.mode == 'h' || full) {
+    char *cf = get_param("charge_full");
+    char *cd = get_param("charge_full_design");
+
+    const int charge_full = atoi(cf);
+    const int charge_full_design = atoi(cd);
+
+    free(cf);
+    free(cd);
+
+    bat.health = 100 * charge_full / charge_full_design;
+  }
+
   blocks = flags.small ? bat.capacity / 7 : bat.capacity / 3;
 }
 
@@ -233,6 +250,12 @@ void update_state(void) {
 
     if (flags.extra_colors == true) {
       battery_color = colors.temp;
+    }
+  } else if (flags.mode == 'h') {
+    data = bat.health;
+
+    if (flags.extra_colors == true) {
+      battery_color = colors.health;
     }
   }
 
@@ -352,6 +375,8 @@ void print_number(int row) {
     data = bat.time;
   } else if (flags.mode == 't') {
     data = bat.temp;
+  } else if (flags.mode == 'h') {
+    data = bat.health;
   }
 
   int digits = digit_count(data);
@@ -591,6 +616,8 @@ int handle_input(char c) {
     } else if (flags.mode == 't') {
       flags.mode = 'm';
     } else if (flags.mode == 'm') {
+      flags.mode = 'h';
+    } else if (flags.mode == 'h') {
       flags.mode = 'c';
     }
 
@@ -645,7 +672,7 @@ void print_help(void) {
        "  -m, --mode MODE                  Specify the mode to be printed "
        "with "
        "-d (c for "
-       "capacity, m for time, t for temperature)\r\n"
+       "capacity, m for time, t for temperature, h for health)\r\n"
        "  -e, --extra-colors               Disable extra core color patterns "
        "for different "
        "modes\r\n"
@@ -772,6 +799,8 @@ void parse_config(void) {
       colors.shell = color_to_ansi(val);
     } else if (!strcmp(key, "color_temp")) {
       colors.temp = color_to_ansi(val);
+    } else if (!strcmp(key, "color_health")) {
+      colors.health = color_to_ansi(val);
     } else if (!strcmp(key, "color_full")) {
       colors.full = color_to_ansi(val);
     } else if (!strcmp(key, "color_left")) {
@@ -864,7 +893,7 @@ void setup(void) {
 
 void print_minimal(void) {
   bat_status(1);
-  printf("Battery: %d%%\r\nTemperature: %d°\r\n", bat.capacity, bat.temp);
+  printf("Battery: %d%%\r\nTemperature: %d°C\r\nHealth: %d%%\r\n", bat.capacity, bat.temp, bat.health);
   if (bat.charging) {
     printf("Time to Full: %dH %dm\r\nCharging: True\r\n", bat.time / 60,
            bat.time % 60);
@@ -895,13 +924,15 @@ int main(int argc, char **argv) {
     pthread_create(&thread, NULL, event_loop, NULL);
 
     while (true) {
-      usleep(200000);
+      usleep(100000);
       bat_status(0);
 
       if (!flags.small || flags.digits) {
         if (flags.mode == 't' && previous_bat.temp != bat.temp) {
           main_loop(false);
         } else if (flags.mode == 'm' && previous_bat.time != bat.time) {
+          main_loop(false);
+        } else if (flags.mode == 'h' && previous_bat.health != bat.health) {
           main_loop(false);
         }
       }
