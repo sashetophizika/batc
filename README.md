@@ -32,7 +32,7 @@ $ batc
 * **-i, --inline**: print the battery inline instead of the center of the screen
 * **-f, --fat**: print a slightly thicker battery
 * **-d, --digits**: print the current capacity as a number inside of the battery (does not work with -s)
-* **-M, --mode=(mode)**: specify mode to be printed with -d (c for capacity, m for time left or to full, t for temperature, h for health)
+* **-M, --mode=(mode)**: specify mode to be printed with -d (c for capacity, p for power in or power draw, t for temperature, h for health)
 * **-e, --extra-colors**: disable extra core color pattern for different modes
 * **-m, --minimal**: print minimal text output
 * **-c, --alt-charge**: use an alternate charging symbol (requires nerd fonts)
@@ -64,15 +64,15 @@ color_mid = yellow   # core color between 20-60%
 color_low = red      # core color between 0-20%
 
 color_temp = magenta # core color in 't' mode
-color_full = cyan    # core color in 'm' mode when charging
-color_left = blue    # core color in 'm' mode when discharging
+color_in = cyan      # core color in 'p' mode when charging
+color_draw = blue    # core color in 'p' mode when discharging
 color_health = red   # core color in 'h' mode
 
 color_shell = white  # color of the outer shell
 color_charge = cyan  # color of the charging symbol
 color_number = NULL  # color of the number inside, comment out line for default
 
-mode = c             # c for capacity, t for temperature, m for time in minutes, h for health in percent
+mode = c             # c for capacity, t for temperature, p for power in watts, h for health in percent
 bat_number = 0       # read from /sys/class/power_supply/BAT0
 
 colors = true 

@@ -13,11 +13,14 @@
 #define toggle(x)                                                              \
   { x = x ? false : true; }
 
+typedef enum Mode { capacity, power, temperature, health, time_m } Mode;
+
 typedef struct Battery {
   int capacity;
   int temp;
-  int time;
+  int power;
   int health;
+  int time;
   bool charging;
 } Battery;
 
@@ -44,12 +47,12 @@ typedef struct Flags {
   bool alt_charge;
   bool extra_colors;
   bool inlin;
-  char mode;
+  Mode mode;
   char bat_number[50];
 } Flags;
 
-Battery bat = {0, 0, 0, 0, false};
-Battery previous_bat = {0, 0, 0, 0, false};
+Battery bat = {0, 0, 0, 0, 0, false};
+Battery previous_bat = {0, 0, 0, 0, 0, false};
 
 Colors colors = {.high = "\033[0;32m\0",
                  .mid = "\033[0;33m\0",
@@ -71,7 +74,7 @@ Flags flags = {.colors = true,
                .alt_charge = false,
                .extra_colors = true,
                .inlin = false,
-               .mode = 'c',
+               .mode = capacity,
                .bat_number = ""};
 
 int newl = 0;
@@ -160,7 +163,7 @@ char *get_param(const char *param) {
 void bat_status(bool full) {
   previous_bat.capacity = bat.capacity;
   previous_bat.temp = bat.temp;
-  previous_bat.time = bat.time;
+  previous_bat.power = bat.power;
   previous_bat.health = bat.health;
   previous_bat.charging = bat.charging;
 
@@ -173,7 +176,7 @@ void bat_status(bool full) {
     exit(0);
   }
 
-  if (flags.mode == 't' || full) {
+  if (flags.mode == temperature || full) {
     char *temp = get_param("temp");
     bat.temp = atoi(temp) / 10;
     free(temp);
@@ -188,7 +191,7 @@ void bat_status(bool full) {
   }
   free(status);
 
-  if (flags.mode == 'm' || full) {
+  if (flags.mode == time_m || full) {
     char *cn = get_param("charge_now");
     char *cf = get_param("charge_full");
     char *cu = get_param("current_now");
@@ -208,7 +211,20 @@ void bat_status(bool full) {
     }
   }
 
-  if (flags.mode == 'h' || full) {
+  if (flags.mode == power || full) {
+    char *cu = get_param("current_now");
+    char *vu = get_param("voltage_now");
+
+    const int current_now = atoi(cu);
+    const int voltage_now = atoi(vu);
+
+    free(cu);
+    free(vu);
+
+    bat.power = (current_now * 1.0 * voltage_now) / 1000000000000;
+  }
+
+  if (flags.mode == health || full) {
     char *cf = get_param("charge_full");
     char *cd = get_param("charge_full_design");
 
@@ -234,10 +250,10 @@ void update_state(void) {
   }
 
   int data = 0;
-  if (flags.mode == 'c') {
+  if (flags.mode == capacity) {
     data = bat.capacity;
-  } else if (flags.mode == 'm') {
-    data = bat.time;
+  } else if (flags.mode == power) {
+    data = bat.power;
 
     if (flags.extra_colors == true) {
       if (bat.charging == true)
@@ -245,17 +261,26 @@ void update_state(void) {
       else
         battery_color = colors.left;
     }
-  } else if (flags.mode == 't') {
+  } else if (flags.mode == temperature) {
     data = bat.temp;
 
     if (flags.extra_colors == true) {
       battery_color = colors.temp;
     }
-  } else if (flags.mode == 'h') {
+  } else if (flags.mode == health) {
     data = bat.health;
 
     if (flags.extra_colors == true) {
       battery_color = colors.health;
+    }
+  } else if (flags.mode == time_m) {
+    data = bat.time;
+
+    if (flags.extra_colors == true) {
+      if (bat.charging == true)
+        battery_color = colors.full;
+      else
+        battery_color = colors.left;
     }
   }
 
@@ -369,14 +394,16 @@ void print_digit(int digit, int row, int col) {
 
 void print_number(int row) {
   int data = 0;
-  if (flags.mode == 'c') {
+  if (flags.mode == capacity) {
     data = bat.capacity;
-  } else if (flags.mode == 'm') {
-    data = bat.time;
-  } else if (flags.mode == 't') {
+  } else if (flags.mode == power) {
+    data = bat.power;
+  } else if (flags.mode == temperature) {
     data = bat.temp;
-  } else if (flags.mode == 'h') {
+  } else if (flags.mode == health) {
     data = bat.health;
+  } else if (flags.mode == time_m) {
+    data = bat.time;
   }
 
   int digits = digit_count(data);
@@ -610,15 +637,25 @@ int handle_input(char c) {
     toggle(flags.extra_colors);
     main_loop(false);
     break;
+  case 'p':
+    if (flags.mode == power) {
+      flags.mode = time_m;
+    } else if (flags.mode == time_m) {
+      flags.mode = power;
+    }
+
+    bat_status(false);
+    main_loop(false);
+    break;
   case 'm':
-    if (flags.mode == 'c') {
-      flags.mode = 't';
-    } else if (flags.mode == 't') {
-      flags.mode = 'm';
-    } else if (flags.mode == 'm') {
-      flags.mode = 'h';
-    } else if (flags.mode == 'h') {
-      flags.mode = 'c';
+    if (flags.mode == capacity) {
+      flags.mode = temperature;
+    } else if (flags.mode == temperature) {
+      flags.mode = power;
+    } else if (flags.mode == power) {
+      flags.mode = health;
+    } else if (flags.mode == health) {
+      flags.mode = capacity;
     }
 
     redraw = true;
@@ -672,7 +709,7 @@ void print_help(void) {
        "  -m, --mode MODE                  Specify the mode to be printed "
        "with "
        "-d (c for "
-       "capacity, m for time, t for temperature, h for health)\r\n"
+       "capacity, p for power, t for temperature, h for health)\r\n"
        "  -e, --extra-colors               Disable extra core color patterns "
        "for different "
        "modes\r\n"
@@ -732,7 +769,15 @@ void handle_flags(int argc, char **argv) {
       toggle(flags.extra_colors);
       break;
     case 'M':
-      flags.mode = optarg[0];
+      if (optarg[0] == 'c') {
+        flags.mode = capacity;
+      } else if (optarg[0] == 't') {
+        flags.mode = temperature;
+      } else if (optarg[0] == 'p') {
+        flags.mode = power;
+      } else if (optarg[0] == 'h') {
+        flags.mode = health;
+      }
       break;
     case 'b': {
       char buffer[50];
@@ -826,7 +871,15 @@ void parse_config(void) {
     } else if (!strcmp(key, "extra_colors")) {
       flags.extra_colors = strcmp(val, "true\n") ? false : true;
     } else if (!strcmp(key, "mode")) {
-      flags.mode = val[0];
+      if (val[0] == 'c') {
+        flags.mode = capacity;
+      } else if (val[0] == 't') {
+        flags.mode = temperature;
+      } else if (val[0] == 'p') {
+        flags.mode = power;
+      } else if (val[0] == 'h') {
+        flags.mode = health;
+      }
     } else if (!strcmp(key, "bat_number")) {
       char buffer[50];
       sprintf(buffer, "/sys/class/power_supply/BAT%c", val[0]);
@@ -893,13 +946,14 @@ void setup(void) {
 
 void print_minimal(void) {
   bat_status(1);
-  printf("Battery: %d%%\r\nTemperature: %d°C\r\nHealth: %d%%\r\n", bat.capacity, bat.temp, bat.health);
+  printf("Battery: %d%%\r\nTemperature: %d°C\r\nHealth: %d%%\r\n", bat.capacity,
+         bat.temp, bat.health);
   if (bat.charging) {
-    printf("Time to Full: %dH %dm\r\nCharging: True\r\n", bat.time / 60,
-           bat.time % 60);
+    printf("Power In: %dW\r\nTime to Full: %dH %dM\r\nCharging: True\r\n",
+           bat.power, bat.time / 60, bat.time % 60);
   } else {
-    printf("Time Left: %dH %dm\r\nCharging: False\r\n", bat.time / 60,
-           bat.time % 60);
+    printf("Power Draw: %dW\r\nTime Left: %dH %dM\r\nCharging: True\r\n",
+           bat.power, bat.time / 60, bat.time % 60);
   }
 }
 
@@ -928,11 +982,11 @@ int main(int argc, char **argv) {
       bat_status(0);
 
       if (!flags.small || flags.digits) {
-        if (flags.mode == 't' && previous_bat.temp != bat.temp) {
+        if (flags.mode == temperature && previous_bat.temp != bat.temp) {
           main_loop(false);
-        } else if (flags.mode == 'm' && previous_bat.time != bat.time) {
+        } else if (flags.mode == power && previous_bat.power != bat.power) {
           main_loop(false);
-        } else if (flags.mode == 'h' && previous_bat.health != bat.health) {
+        } else if (flags.mode == health && previous_bat.health != bat.health) {
           main_loop(false);
         }
       }
