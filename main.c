@@ -10,6 +10,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#define Esc 27
+#define Ctrl_c 3
+
 #define toggle(x)                                                              \
   { x = x ? false : true; }
 
@@ -504,7 +507,7 @@ void print_bat(void) {
     if (!flags.fat && flags.live) {
       printf("\033[%d;%dH    \033[%d;%dH                                       "
              "      \r\n",
-             newl + core_rows, indent + 40 + flags.inlin, newl + core_rows + 2,
+             newl + core_rows, indent + 40, newl + core_rows + 2,
              indent);
     }
     redraw = false;
@@ -556,7 +559,7 @@ void define_position(void) {
       newl = rows - min_rows + 1;
     }
 
-    indent = 0;
+    indent = 3;
   } else {
     printf("\033[2J");
     newl = rows / 2 - 3;
@@ -576,13 +579,12 @@ void big_loop(bool redefine) {
 
   if (flags.inlin) {
     printf("\033[%d;0H", newl - 1);
-  } else {
-    printf("\r\n");
   }
+    printf("\r\n");
 }
 
 void print_small_bat_row(bool top) {
-  printf("%s██%s", colors.shell, battery_color);
+  printf("  %s██%s", colors.shell, battery_color);
   for (int i = 0; i < 14; i++) {
     if (i < blocks) {
       printf("█");
@@ -602,10 +604,10 @@ void print_small_bat_row(bool top) {
 }
 
 void print_small_bat(void) {
-  printf("\n%s██████████████████\r\n", colors.shell);
+  printf("\n  %s██████████████████\r\n", colors.shell);
   print_small_bat_row(true);
   print_small_bat_row(false);
-  printf("%s██████████████████\n", colors.shell);
+  printf("  %s██████████████████\n", colors.shell);
 }
 
 void small_loop(void) {
@@ -675,8 +677,8 @@ int handle_input(char c) {
   /*  break;*/
   /*}*/
   case 'q':
-  case 27: // Escape
-  case 3:  // Ctrl-c
+  case Esc:
+  case Ctrl_c:
     exit(0);
   }
   return 1;
