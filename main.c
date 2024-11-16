@@ -507,8 +507,7 @@ void print_bat(void) {
     if (!flags.fat && flags.live) {
       printf("\033[%d;%dH    \033[%d;%dH                                       "
              "      \r\n",
-             newl + core_rows, indent + 40, newl + core_rows + 2,
-             indent);
+             newl + core_rows, indent + 40, newl + core_rows + 2, indent);
     }
     redraw = false;
   } else {
@@ -580,7 +579,7 @@ void big_loop(bool redefine) {
   if (flags.inlin) {
     printf("\033[%d;0H", newl - 1);
   }
-    printf("\r\n");
+  printf("\r\n");
 }
 
 void print_small_bat_row(bool top) {
@@ -654,7 +653,7 @@ int handle_input(char c) {
       flags.mode = temperature;
     } else if (flags.mode == temperature) {
       flags.mode = power;
-    } else if (flags.mode == power) {
+    } else if (flags.mode == power || flags.mode == time_m) {
       flags.mode = health;
     } else if (flags.mode == health) {
       flags.mode = capacity;
