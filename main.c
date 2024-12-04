@@ -104,25 +104,25 @@ int digit_count(int num) {
   return count;
 }
 
-const char *color_to_ansi(char *color) {
+void color_to_ansi(char *color, const char **elem) {
   if (strcmp(color, "none\n") == 0) {
-    return "\033[0m\0";
+    *elem = "\033[0m\0";
   } else if (strcmp(color, "black\n") == 0) {
-    return "\033[0;30m\0";
+    *elem = "\033[0;30m\0";
   } else if (strcmp(color, "red\n") == 0) {
-    return "\033[0;31m\0";
+    *elem = "\033[0;31m\0";
   } else if (strcmp(color, "green\n") == 0) {
-    return "\033[0;32m\0";
+    *elem = "\033[0;32m\0";
   } else if (strcmp(color, "yellow\n") == 0) {
-    return "\033[0;33m\0";
+    *elem = "\033[0;33m\0";
   } else if (strcmp(color, "blue\n") == 0) {
-    return "\033[0;34m\0";
+    *elem = "\033[0;34m\0";
   } else if (strcmp(color, "magenta\n") == 0) {
-    return "\033[0;35m\0";
+    *elem = "\033[0;35m\0";
   } else if (strcmp(color, "cyan\n") == 0) {
-    return "\033[0;36m\0";
+    *elem = "\033[0;36m\0";
   } else if (strcmp(color, "white\n") == 0) {
-    return "\033[0;37m\0";
+    *elem = "\033[0;37m\0";
   } else if (color[0] == '#') {
     char r[3], g[3], b[3];
 
@@ -133,13 +133,13 @@ const char *color_to_ansi(char *color) {
     strncpy(b, color + 5, 2);
     b[2] = '\0';
 
-    char *a = malloc(100);
-    sprintf(a, "\033[38;2;%ld;%ld;%ldm", strtol(r, NULL, 16),
-            strtol(g, NULL, 16), strtol(b, NULL, 16));
-    return a;
+    char *ansi_color = malloc(100);
+    snprintf(ansi_color, 100, "\033[38;2;%ld;%ld;%ldm", strtol(r, NULL, 16),
+             strtol(g, NULL, 16), strtol(b, NULL, 16));
+    *elem = ansi_color;
+  } else {
+    *elem = "\033[0m";
   }
-
-  return "\033[0m";
 }
 
 char *get_param(const char *param) {
@@ -834,25 +834,25 @@ void parse_config(void) {
     }
 
     if (!strcmp(key, "color_high")) {
-      colors.high = color_to_ansi(val);
+      color_to_ansi(val, &colors.high);
     } else if (!strcmp(key, "color_mid")) {
-      colors.mid = color_to_ansi(val);
+      color_to_ansi(val, &colors.mid);
     } else if (!strcmp(key, "color_low")) {
-      colors.low = color_to_ansi(val);
+      color_to_ansi(val, &colors.low);
     } else if (!strcmp(key, "color_charge")) {
-      colors.charge = color_to_ansi(val);
+      color_to_ansi(val, &colors.charge);
     } else if (!strcmp(key, "color_shell")) {
-      colors.shell = color_to_ansi(val);
+      color_to_ansi(val, &colors.shell);
     } else if (!strcmp(key, "color_temp")) {
-      colors.temp = color_to_ansi(val);
+      color_to_ansi(val, &colors.temp);
     } else if (!strcmp(key, "color_health")) {
-      colors.health = color_to_ansi(val);
+      color_to_ansi(val, &colors.health);
     } else if (!strcmp(key, "color_full")) {
-      colors.full = color_to_ansi(val);
+      color_to_ansi(val, &colors.full);
     } else if (!strcmp(key, "color_left")) {
-      colors.left = color_to_ansi(val);
+      color_to_ansi(val, &colors.left);
     } else if (!strcmp(key, "color_number")) {
-      colors.number = color_to_ansi(val);
+      color_to_ansi(val, &colors.number);
     } else if (!strcmp(key, "colors")) {
       flags.colors = strcmp(val, "true\n") ? false : true;
     } else if (!strcmp(key, "live")) {
