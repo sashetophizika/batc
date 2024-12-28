@@ -47,6 +47,11 @@ In live mode you can use some keybinds.
 * **f**: toggle fat
 * **c**: toggle alt_charge
 * **m**: cycle mode
+* **1**: capacity mode
+* **2**: tempertature mode
+* **3**: power mode
+* **4**: health mode
+* **5**: time mode
 
 ## Configuration
 
@@ -72,7 +77,7 @@ color_shell = white  # color of the outer shell
 color_charge = cyan  # color of the charging symbol
 color_number = NULL  # color of the number inside, comment out line for default
 
-mode = c             # c for capacity, t for temperature, p for power in watts, h for health in percent
+mode = c             # c for capacity in percert, t for temperature in celsius, p for power in watts, h for health in percent
 bat_number = 0       # read from /sys/class/power_supply/BAT0
 
 colors = true 

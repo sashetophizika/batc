@@ -658,11 +658,41 @@ int handle_input(char c) {
     } else if (flags.mode == health) {
       flags.mode = capacity;
     }
-
     redraw = true;
     bat_status(false);
     main_loop(false);
     break;
+  case '1':
+    flags.mode = capacity;
+    redraw = true;
+    bat_status(false);
+    main_loop(false);
+    break;
+  case '2':
+    flags.mode = temperature;
+    redraw = true;
+    bat_status(false);
+    main_loop(false);
+    break;
+  case '3':
+    flags.mode = power;
+    redraw = true;
+    bat_status(false);
+    main_loop(false);
+    break;
+  case '4':
+    flags.mode = health;
+    redraw = true;
+    bat_status(false);
+    main_loop(false);
+    break;
+  case '5':
+    flags.mode = time_m;
+    redraw = true;
+    bat_status(false);
+    main_loop(false);
+    break;
+
   /*case 'a': {*/
   /*  char b[100];*/
   /*  snprintf(b, 100, "echo %d > ~/testbat/capacity", bat.capacity - 1);*/

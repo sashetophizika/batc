@@ -1,4 +1,4 @@
-cflags := "-O3 -Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs"
+cflags := "-O3 -Wall -Wextra -Wpedantic -Wformat=2 -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes -Wold-style-definition -Wredundant-decls -Wnested-externs -Wmissing-include-dirs -fsanitize=address"
 
 cc := if `which clang` != "" { "clang" } else { "gcc" }
 destdir := if env_var("USER") == "root" { "/usr/bin/" } else { "$HOME/.local/bin/" } 
