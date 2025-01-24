@@ -14,7 +14,9 @@
 #define Ctrl_c 3
 
 #define toggle(x)                                                              \
-  { x = x ? false : true; }
+  {                                                                            \
+    x = x ? false : true;                                                      \
+  }
 
 typedef enum Mode { capacity, power, temperature, health, time_m } Mode;
 
@@ -86,13 +88,13 @@ int rows = 0;
 int cols = 0;
 
 bool redraw = true;
+int previous_num_length = 0;
+
 int blocks = 0;
+int previous_blocks = 0;
 
 const char *battery_color = "";
 const char *previous_battery_color = "";
-
-int previous_num_length = 0;
-int previous_blocks = 0;
 
 int digit_count(int num) {
   int count = 0;
@@ -632,7 +634,9 @@ int handle_input(char c) {
     break;
   case 'c':
     toggle(flags.alt_charge);
-    print_charge();
+    if (!flags.small) {
+      print_charge();
+    }
     break;
   case 'e':
     toggle(flags.extra_colors);
