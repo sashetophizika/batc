@@ -155,8 +155,14 @@ char *get_param(const char *param) {
 
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
-    printf("Error: file %s not found.", fn);
-    exit(0);
+    if (!flags.live) {
+      printf("Error: file %s not found.", fn);
+    }
+
+    line = malloc(3);
+    memset(line, '0', 2);
+    line[2] = '\0';
+    return line;
   }
 
   getline(&line, &len, fp);
