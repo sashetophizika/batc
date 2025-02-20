@@ -30,6 +30,7 @@ $ batc
 * **-l, --live**: monitor the battery live (close with `q` or `Esc`)
 * **-s, --small**: print a small inline battery instead
 * **-i, --inline**: print the battery inline instead of the center of the screen
+* **-t, --t**: print the technology of the battery shortened
 * **-f, --fat**: print a slightly thicker battery
 * **-d, --digits**: print the current capacity as a number inside of the battery (does not work with -s)
 * **-M, --mode=(mode)**: specify mode to be printed with -d (c for capacity, p for power in or power draw, t for temperature, h for health)
@@ -43,6 +44,7 @@ $ batc
 In live mode you can use some keybinds.
 
 * **d**: toggle digits
+* **t**: toggle tech
 * **e**: toggle extra_colors
 * **f**: toggle fat
 * **c**: toggle alt_charge
@@ -85,6 +87,7 @@ live = false
 minimal = false
 small = false
 inline = false
+tech = false
 digits = false
 fat = false
 alt_charge = false
