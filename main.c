@@ -159,7 +159,7 @@ char *get_param(const char *param) {
 
 #ifdef DEBUG
   if (!strcmp(param, "capacity"))
-    strcpy(fn, "./capacity");
+    strcpy(fn, "./debug/capacity");
 #endif
 
   FILE *fp = fopen(fn, "r");
@@ -762,13 +762,13 @@ int handle_input(char c) {
 #ifdef DEBUG
   case 'a': {
     char b[100];
-    snprintf(b, 100, "echo %d > ./capacity", bat.capacity - 1);
+    snprintf(b, 100, "echo %d > ./debug/capacity", bat.capacity - 1);
     system(b);
     break;
   }
   case 's': {
     char b[100];
-    snprintf(b, 100, "echo %d > ./capacity", bat.capacity + 1);
+    snprintf(b, 100, "echo %d > ./debug/capacity", bat.capacity + 1);
     system(b);
     break;
   }
