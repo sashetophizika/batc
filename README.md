@@ -77,6 +77,7 @@ color_health = red   # core color in 'h' mode
 
 color_shell = white  # color of the outer shell
 color_charge = cyan  # color of the charging symbol
+color_tech = cyan    # color of the technology symbol
 color_number = NULL  # color of the number inside, comment out line for default
 
 mode = c             # c for capacity in percert, t for temperature in celsius, p for power in watts, h for health in percent

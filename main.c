@@ -39,6 +39,7 @@ typedef struct Colors {
   const char *full;
   const char *left;
   const char *charge;
+  const char *tech;
   const char *shell;
   const char *number;
 } Colors;
@@ -69,6 +70,7 @@ Colors colors = {.high = "\033[0;32m\0",
                  .full = "\033[0;36m\0",
                  .left = "\033[0;34m\0",
                  .charge = "\033[0;36m\0",
+                 .tech = "\033[0;36m\0",
                  .shell = "\033[0m\0",
                  .number = NULL};
 
@@ -434,7 +436,7 @@ void print_number(int row) {
   }
 }
 void print_tech(void) {
-  printf("%s\033[%d;%dH", colors.charge, newl + 2, indent - 16);
+  printf("%s\033[%d;%dH", colors.tech, newl + 2, indent - 16);
   if (!flags.tech) {
     printf("             "
            "\033[1B\033[13D             "
@@ -935,6 +937,8 @@ void parse_config(void) {
       color_to_ansi(val, &colors.low);
     } else if (!strcmp(key, "color_charge")) {
       color_to_ansi(val, &colors.charge);
+    } else if (!strcmp(key, "color_tech")) {
+      color_to_ansi(val, &colors.tech);
     } else if (!strcmp(key, "color_shell")) {
       color_to_ansi(val, &colors.shell);
     } else if (!strcmp(key, "color_temp")) {
