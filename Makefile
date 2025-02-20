@@ -16,7 +16,12 @@ else
 endif
 
 batc: main.c
-	$(CC) main.c -o batc $(CFLAGS)
+	[ -d release ] || mkdir release
+	$(CC) main.c -o ./release/batc $(CFLAGS)
+
+debug: main.c
+	[ -d debug ] || mkdir release
+	$(CC) main.c -o ./debug/batc $(CFLAGS) -DDEBUG
 
 install:
 	@cp ./batc $(DESTDIR)
