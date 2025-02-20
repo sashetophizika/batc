@@ -27,6 +27,7 @@ typedef struct Battery {
   int health;
   int time;
   bool charging;
+  char *tech;
 } Battery;
 
 typedef struct Colors {
@@ -52,12 +53,13 @@ typedef struct Flags {
   bool alt_charge;
   bool extra_colors;
   bool inlin;
+  bool tech;
   Mode mode;
   char bat_number[50];
 } Flags;
 
-Battery bat = {0, 0, 0, 0, 0, false};
-Battery previous_bat = {0, 0, 0, 0, 0, false};
+Battery bat = {0, 0, 0, 0, 0, false, NULL};
+Battery previous_bat = {0, 0, 0, 0, 0, false, NULL};
 
 Colors colors = {.high = "\033[0;32m\0",
                  .mid = "\033[0;33m\0",
@@ -79,6 +81,7 @@ Flags flags = {.colors = true,
                .alt_charge = false,
                .extra_colors = true,
                .inlin = false,
+               .tech = false,
                .mode = capacity,
                .bat_number = ""};
 
@@ -155,7 +158,7 @@ char *get_param(const char *param) {
 
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
-    if (!flags.live) {
+    if (!flags.live && !flags.minimal) {
       printf("Error: file %s not found.", fn);
     }
 
@@ -181,6 +184,10 @@ void bat_status(bool full) {
   char *cap = get_param("capacity");
   bat.capacity = atoi(cap);
   free(cap);
+
+  if (redraw) {
+    bat.tech = get_param("technology");
+  }
 
   if (bat.capacity > 100 || bat.capacity < 0) {
     printf("Erorr: Battery reporting invalid capacity levels");
@@ -422,37 +429,74 @@ void print_number(int row) {
 
   int col = indent + 4 * digits + 12;
   for (int i = 0; i < digits; i++) {
-    print_digit(!flags.digits ? 42 : data % 10, row, col - 8 * i);
+    print_digit(flags.digits ? data % 10 : 42, row, col - 8 * i);
     data /= 10;
+  }
+}
+void print_tech(void) {
+  printf("%s\033[%d;%dH", colors.charge, newl + 2, indent - 16);
+  if (!flags.tech) {
+    printf("             "
+           "\033[1B\033[13D             "
+           "\033[1B\033[13D             "
+           "\033[1B\033[13D             "
+           "\033[1B\033[13D             ");
+    return;
+  }
+
+  if (strstr(bat.tech, "Ni") != NULL) {
+    if (flags.fat) {
+      printf("███   ██  ██"
+             "\033[1B\033[13D███  ██    "
+             "\033[1B\033[13D██ █ ██  ██"
+             "\033[1B\033[13D██  ███  ██"
+             "\033[1B\033[13D██   ███  ██");
+    } else {
+      printf(" ███  ██  ██"
+             "\033[1B\033[13D ███ ██    "
+             "\033[1B\033[13D ██ ███  ██"
+             "\033[1B\033[13D ██  ███  ██"
+             "\033[1B\033[13D             ");
+    }
+  } else if (strstr(bat.tech, "Li") != NULL) {
+    if (flags.fat) {
+      printf("  ██       ██"
+             "\033[1B\033[13D  ██         "
+             "\033[1B\033[13D  ██       ██"
+             "\033[1B\033[13D  ██       ██"
+             "\033[1B\033[13D  ███████  ██");
+    } else {
+      printf("   ██      ██"
+             "\033[1B\033[13D   ██        "
+             "\033[1B\033[13D   ██      ██"
+             "\033[1B\033[13D   ██████  ██"
+             "\033[1B\033[13D             ");
+    }
   }
 }
 
 void print_charge(void) {
+  printf("%s\033[%d;%dH", colors.charge, newl + 3, indent + 47);
   if (!bat.charging) {
-    printf("%s\033[%d;%dH             "
+    printf("             "
            "\033[1B\033[13D             "
-           "\033[1B\033[13D             ",
-           colors.charge, newl + 3, indent + 47);
+           "\033[1B\033[13D             ");
   } else if (flags.fat && flags.alt_charge) {
-    printf("%s\033[%d;%dH   ███████ "
+    printf("   ███████ "
            "\033[1B\033[13D    ██     "
-           "\033[1B\033[13D███████    ",
-           colors.charge, newl + 3, indent + 47);
+           "\033[1B\033[13D███████    ");
   } else if (flags.fat) {
-    printf("%s\033[%d;%dH    ███████  "
+    printf("    ███████  "
            "\033[1B\033[13D    ███      "
-           "\033[1B\033[13D███████      ",
-           colors.charge, newl + 3, indent + 47);
+           "\033[1B\033[13D███████      ");
   } else if (flags.alt_charge) {
-    printf("%s\033[%d;%dH   ██████ "
+    printf("   ██████ "
            "\033[1B\033[13D ██████    "
-           "\033[1B\033[13D             ",
-           colors.charge, newl + 3, indent + 47);
+           "\033[1B\033[13D             ");
   } else {
-    printf("%s\033[%d;%dH   ████████  "
+    printf("   ████████  "
            "\033[1B\033[13D████████     "
-           "\033[1B\033[13D             ",
-           colors.charge, newl + 3, indent + 47);
+           "\033[1B\033[13D             ");
   }
 }
 
@@ -582,6 +626,7 @@ void big_loop(bool redefine) {
   update_state();
   print_bat();
   print_charge();
+  print_tech();
   print_number(newl + 2);
 
   if (flags.inlin) {
@@ -631,6 +676,10 @@ int handle_input(char c) {
   switch (c) {
   case 'd':
     toggle(flags.digits);
+    main_loop(false);
+    break;
+  case 't':
+    toggle(flags.tech);
     main_loop(false);
     break;
   case 'f':
@@ -774,6 +823,7 @@ void handle_flags(int argc, char **argv) {
       {"live", no_argument, NULL, 'l'},
       {"minimal", no_argument, NULL, 'm'},
       {"inline", no_argument, NULL, 'i'},
+      {"tech", no_argument, NULL, 't'},
       {"small", no_argument, NULL, 's'},
       {"help", no_argument, NULL, 'h'},
   };
@@ -793,6 +843,9 @@ void handle_flags(int argc, char **argv) {
       break;
     case 'i':
       toggle(flags.inlin);
+      break;
+    case 't':
+      toggle(flags.tech);
       break;
     case 's':
       toggle(flags.small);
@@ -987,13 +1040,17 @@ void setup(void) {
 
 void print_minimal(void) {
   bat_status(1);
-  printf("Battery: %d%%\r\nTemperature: %d°C\r\nHealth: %d%%\r\n", bat.capacity,
-         bat.temp, bat.health);
+  printf("Battery:       %d%%\r\nHealth:        "
+         "%d%%\r\nTemperature:   %d°C\r\nTechnology:    "
+         "%s\r",
+         bat.capacity, bat.temp, bat.health, bat.tech);
   if (bat.charging) {
-    printf("Power In: %dW\r\nTime to Full: %dH %dM\r\nCharging: True\r\n",
+    printf("Power In:      %dW\r\nTime to Full:  %dH %dM\r\nCharging:      "
+           "True\r\n",
            bat.power, bat.time / 60, bat.time % 60);
   } else {
-    printf("Power Draw: %dW\r\nTime Left: %dH %dM\r\nCharging: True\r\n",
+    printf("Power Draw:    %dW\r\nTime Left:     %dH %dM\r\nCharging:      "
+           "False\r\n",
            bat.power, bat.time / 60, bat.time % 60);
   }
 }
