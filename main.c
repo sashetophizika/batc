@@ -1088,7 +1088,7 @@ int main(int argc, char **argv) {
     pthread_create(&thread, NULL, event_loop, NULL);
 
     while (true) {
-      usleep(100000);
+      usleep(250000);
       bat_status(0);
 
       if (!flags.small || flags.digits) {
