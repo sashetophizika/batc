@@ -16,15 +16,15 @@ else
 endif
 
 batc: main.c
-	[ -d release ] || mkdir release
+	@[ -d release ] || mkdir release
 	$(CC) main.c -o ./release/batc $(CFLAGS)
 
 debug: main.c
-	[ -d debug ] || mkdir release
+	@[ -d debug ] || mkdir release
 	$(CC) main.c -o ./debug/batc $(CFLAGS) -DDEBUG
 
 install:
-	@cp ./batc $(DESTDIR)
+	@cp ./release/batc $(DESTDIR)
 	@chmod 775 $(DESTDIR)/batc
 	@echo "batc has been installed to: $(DESTDIR)"
 
