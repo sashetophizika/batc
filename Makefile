@@ -25,6 +25,9 @@ debug: $(SRC)
 	@[ -d debug ] || mkdir release
 	$(CC) $(SRC) $(CFLAGS) -o debug/batc -DDEBUG
 
+run: batc
+	release/batc -l
+
 install: release/batc $(DESTDIR)
 	@cp release/batc $(DESTDIR)
 	@chmod 775 $(DESTDIR)/batc
