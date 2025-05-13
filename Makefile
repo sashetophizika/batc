@@ -17,11 +17,11 @@ endif
 
 batc: main.c
 	@[ -d release ] || mkdir release
-	$(CC) main.c -o ./release/batc $(CFLAGS)
+	$(CC) main.c input.c config.c state.c status.c print.c utils.c -o ./release/batc $(CFLAGS)
 
 debug: main.c
 	@[ -d debug ] || mkdir release
-	$(CC) main.c -o ./debug/batc $(CFLAGS) -DDEBUG
+	$(CC) main.c input.c config.c state.c status.c print.c utils.c -o ./debug/batc $(CFLAGS) -DDEBUG
 
 install:
 	@cp ./release/batc $(DESTDIR)
