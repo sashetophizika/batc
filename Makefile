@@ -9,24 +9,26 @@ CFLAGS := -O3 -Wall -Wextra -Wpedantic \
           -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
           -Wredundant-decls -Wnested-externs -Wmissing-include-dirs
 
+SRC := $(wildcard src/*.c)
+
 ifeq (${USER},root)
 	DESTDIR := /usr/bin/
 else
 	DESTDIR := ~/.local/bin/
 endif
 
-batc: main.c
+batc: $(SRC)
 	@[ -d release ] || mkdir release
-	$(CC) main.c input.c config.c state.c status.c print.c utils.c -o ./release/batc $(CFLAGS)
+	$(CC) $(SRC) $(CFLAGS) -o release/batc 
 
-debug: main.c
+debug: $(SRC)
 	@[ -d debug ] || mkdir release
-	$(CC) main.c input.c config.c state.c status.c print.c utils.c -o ./debug/batc $(CFLAGS) -DDEBUG
+	$(CC) $(SRC) $(CFLAGS) -o debug/batc -DDEBUG
 
-install:
-	@cp ./release/batc $(DESTDIR)
+install: release/batc $(DESTDIR)
+	@cp release/batc $(DESTDIR)
 	@chmod 775 $(DESTDIR)/batc
 	@echo "batc has been installed to: $(DESTDIR)"
 
-uninstall:
+uninstall: $(DESTDIR)
 	@rm $(DESTDIR)/batc
