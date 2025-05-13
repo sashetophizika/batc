@@ -4,7 +4,15 @@ cc := if `which clang` != "" { "clang" } else { "gcc" }
 destdir := if env_var("USER") == "root" { "/usr/bin/" } else { "$HOME/.local/bin/" } 
 
 batc:
-	{{cc}} main.c -o batc {{cflags}}
+	@[ -d release ] || mkdir release
+	{{cc}} src/*.c {{cflags}} -o release/batc
+
+debug:
+	@[ -d release ] || mkdir release
+	{{cc}} src/*.c {{cflags}} -o debug/batc -DDEBUG 
+
+run: batc
+    release/batc -l
 
 install:
     @cp ./batc {{destdir}}
