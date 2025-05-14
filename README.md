@@ -62,8 +62,8 @@ You can create a file named `~/.config/batc/batc.conf` or `~/.config/batc/config
 ### Default configuration:
 
 ```python
-# do not put quotes around the values
-# colors can be [red | green | yellow | blue | magenta | cyan | white | black | none]
+# colors can be one of 
+# [red | green | yellow | blue | magenta | cyan | white | black | none]
 # or a hex code (e.g., #0000ff)
 
 color_high = green   # core color between 60-100%
@@ -78,9 +78,13 @@ color_health = red   # core color in 'h' mode
 color_shell = white  # color of the outer shell
 color_charge = cyan  # color of the charging symbol
 color_tech = cyan    # color of the technology symbol
-color_number = NULL  # color of the number inside, comment out line for default
+color_number = NULL  # color of the number inside
 
-mode = c             # c for capacity in percert, t for temperature in celsius, p for power in watts, h for health in percent
+mode = c             # c for capacity in percent, 
+                     # t for temperature in celsius,
+                     # p for power in watts,
+                     # h for health in percent
+
 bat_number = 0       # read from /sys/class/power_supply/BAT0
 
 colors = true 
