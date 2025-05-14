@@ -80,10 +80,10 @@ color_charge = cyan  # color of the charging symbol
 color_tech = cyan    # color of the technology symbol
 color_number = NULL  # color of the number inside
 
-mode = c             # c for capacity in percent, 
-                     # t for temperature in celsius,
-                     # p for power in watts,
-                     # h for health in percent
+mode = capacity      # c or capacity in percent, 
+                     # t or temp in celsius,
+                     # p or power in watts,
+                     # h or health in percent
 
 bat_number = 0       # read from /sys/class/power_supply/BAT0
 
