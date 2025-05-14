@@ -39,7 +39,7 @@ void bat_status(bool full) {
   bat.capacity = atoi(cap);
   free(cap);
 
-  if (state.redraw) {
+  if (bat.tech == NULL) {
     bat.tech = get_param("technology");
   }
 
