@@ -2,13 +2,13 @@
 
 ### Simple utility to monitor the battery in a stylish manner.
 
-![image](screenshot.png "screenshot")
+![image](images/screenshot.png "screenshot")
 ### Small version:
 
-![image](screenshot_small.png "screenshot_small")
+![image](images/screenshot_small.png "screenshot_small")
 ### Version with some extra options:
 
-![image](screenshot_full.png "screenshot_full")
+![image](images/screenshot_full.png "screenshot_full")
 
 ## Installation
 
