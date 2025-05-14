@@ -1,6 +1,11 @@
 #pragma once
 #include <stdbool.h>
 
+#define toggle(x)                                                              \
+  {                                                                            \
+    x = x ? false : true;                                                      \
+  }
+
 typedef enum Mode { capacity, power, temperature, health, time_m } Mode;
 
 typedef struct Battery {
@@ -10,8 +15,17 @@ typedef struct Battery {
   int health;
   int time;
   bool is_charging;
-  char *tech;
+  const char *tech;
 } Battery;
+
+typedef struct DrawState {
+  int start_row;
+  int start_col;
+  int term_rows;
+  int term_cols;
+  bool redraw;
+  const char *inner_color;
+} DrawState;
 
 typedef struct Colors {
   const char *high;
@@ -43,22 +57,6 @@ typedef struct Flags {
 } Flags;
 
 extern Battery bat;
-extern Battery prev_bat;
-
 extern Colors colors;
-
 extern Flags flags;
-
-extern int start_row;
-extern int start_col;
-extern int rows;
-extern int cols;
-
-extern bool redraw;
-extern int prev_digits;
-
-extern int blocks;
-extern int prev_blocks;
-
-extern const char *inner_color;
-extern const char *prev_inner_color;
+extern DrawState state;

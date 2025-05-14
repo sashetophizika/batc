@@ -1,11 +1,8 @@
 #include <dirent.h>
-#include <getopt.h>
 #include <pthread.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/ioctl.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "config.h"
@@ -13,7 +10,6 @@
 #include "print.h"
 #include "state.h"
 #include "status.h"
-#include "utils.h"
 
 void cleanup(void) {
   system("/bin/stty cooked echo");
@@ -22,7 +18,7 @@ void cleanup(void) {
   if (flags.small) {
     printf("\033[5B");
   } else if (flags.inlin) {
-    printf("\033[3B\033[%d;0H", start_row + 8 + flags.fat);
+    printf("\033[3B\033[%d;0H", state.start_row + 8 + flags.fat);
   } else if (flags.live) {
     printf("\033[?47l\033[u");
   } else if (!flags.minimal) {
@@ -60,6 +56,14 @@ void setup(void) {
   }
 }
 
+void loop_sleep(void) {
+#ifdef DEBUG
+  usleep(2500);
+#else
+  usleep(250000);
+#endif
+}
+
 int main(int argc, char **argv) {
   parse_config();
   parse_flags(argc, argv);
@@ -73,37 +77,40 @@ int main(int argc, char **argv) {
   }
 
   bat_status(false);
-  main_loop(true);
+  print_battery(true);
 
   struct winsize w;
+  Battery prev_bat = bat;
+
   if (flags.live) {
     pthread_t thread;
     pthread_create(&thread, NULL, event_loop, NULL);
 
     while (true) {
-      usleep(250000);
-      bat_status(0);
-
       if (!flags.small || flags.digits) {
         if (flags.mode == temperature && prev_bat.temp != bat.temp) {
-          main_loop(false);
+          print_battery(false);
         } else if (flags.mode == power && prev_bat.power != bat.power) {
-          main_loop(false);
+          print_battery(false);
         } else if (flags.mode == health && prev_bat.health != bat.health) {
-          main_loop(false);
+          print_battery(false);
         }
       }
 
       if (prev_bat.capacity != bat.capacity ||
           prev_bat.is_charging != bat.is_charging) {
-        main_loop(false);
+        print_battery(false);
       }
 
       ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-      if (w.ws_row != rows || w.ws_col != cols) {
-        redraw = true;
-        main_loop(true);
+      if (w.ws_row != state.term_rows || w.ws_col != state.term_cols) {
+        state.redraw = true;
+        print_battery(true);
       }
+
+      loop_sleep();
+      prev_bat = bat;
+      bat_status(false);
     }
   }
 }

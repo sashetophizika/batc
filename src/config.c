@@ -1,16 +1,12 @@
-#include "state.h"
-#include "utils.h"
 #include <dirent.h>
 #include <getopt.h>
-#include <pthread.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <time.h>
 #include <unistd.h>
+
+#include "print.h"
+#include "state.h"
 
 void color_to_ansi(char *color, const char **elem) {
   if (strcmp(color, "none\n") == 0) {

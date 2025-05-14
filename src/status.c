@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
 #include "state.h"
 #include "status.h"
@@ -36,17 +35,11 @@ char *get_param(const char *param) {
 }
 
 void bat_status(bool full) {
-  prev_bat.capacity = bat.capacity;
-  prev_bat.temp = bat.temp;
-  prev_bat.power = bat.power;
-  prev_bat.health = bat.health;
-  prev_bat.is_charging = bat.is_charging;
-
   char *cap = get_param("capacity");
   bat.capacity = atoi(cap);
   free(cap);
 
-  if (redraw) {
+  if (state.redraw) {
     bat.tech = get_param("technology");
   }
 
@@ -115,6 +108,4 @@ void bat_status(bool full) {
 
     bat.health = 100 * charge_full / charge_full_design;
   }
-
-  blocks = flags.small ? bat.capacity / 7 : bat.capacity / 3;
 }

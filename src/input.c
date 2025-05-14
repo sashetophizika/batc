@@ -1,39 +1,34 @@
-#include <dirent.h>
-#include <getopt.h>
-#include <pthread.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <unistd.h>
 
 #include "input.h"
 #include "print.h"
 #include "state.h"
 #include "status.h"
-#include "utils.h"
+
+#define Esc 27
+#define Ctrl_c 3
 
 void instant_update(void) {
-  redraw = true;
+  state.redraw = true;
   bat_status(false);
-  main_loop(false);
+  print_battery(false);
 }
 
 int handle_input(char c) {
   switch (c) {
   case 'd':
     toggle(flags.digits);
-    main_loop(false);
+    print_battery(false);
     break;
   case 't':
     toggle(flags.tech);
-    main_loop(false);
+    print_battery(false);
     break;
   case 'f':
     toggle(flags.fat);
-    redraw = true;
-    main_loop(false);
+    state.redraw = true;
+    print_battery(false);
     break;
   case 'c':
     toggle(flags.alt_charge);
@@ -43,7 +38,7 @@ int handle_input(char c) {
     break;
   case 'e':
     toggle(flags.extra_colors);
-    main_loop(false);
+    print_battery(false);
     break;
   case 'p':
     if (flags.mode == power) {
@@ -53,7 +48,7 @@ int handle_input(char c) {
     }
 
     bat_status(false);
-    main_loop(false);
+    print_battery(false);
     break;
   case 'm':
     if (flags.mode == capacity) {

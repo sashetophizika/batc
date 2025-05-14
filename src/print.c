@@ -1,7 +1,3 @@
-#include <dirent.h>
-#include <getopt.h>
-#include <pthread.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,7 +8,9 @@
 #include "print.h"
 #include "state.h"
 #include "status.h"
-#include "utils.h"
+
+#define MAX_BLOCKS_BIG 33
+#define MAX_BLOCKS_SMALL 14
 
 void print_digit(int digit, int row, int col) {
   int bitstring;
@@ -84,8 +82,8 @@ void print_digit(int digit, int row, int col) {
   int negate = 0;
   const char *digit_color = colors.number;
   if (colors.number == NULL || !flags.digits) {
-    negate = blocks + start_col + 3 - col;
-    digit_color = inner_color;
+    negate = bat.capacity / 3 + state.start_col + 3 - col;
+    digit_color = state.inner_color;
   }
 
   printf("\033[%d;%dH%s", row, col, digit_color);
@@ -133,7 +131,7 @@ void print_number(int row) {
   int digits = count_digits(data);
   digits = digits > 4 ? 4 : digits;
 
-  int col = start_col + 4 * digits + 12;
+  int col = state.start_col + 4 * digits + 12;
   for (int i = 0; i < digits; i++) {
     print_digit(flags.digits ? data % 10 : 42, row, col - 8 * i);
     data /= 10;
@@ -141,7 +139,7 @@ void print_number(int row) {
 }
 
 void print_tech(void) {
-  printf("%s\033[%d;%dH", colors.tech, start_row + 2, start_col - 16);
+  printf("%s\033[%d;%dH", colors.tech, state.start_row + 2, state.start_col - 16);
   if (!flags.tech) {
     printf("             "
            "\033[1B\033[13D             "
@@ -183,7 +181,7 @@ void print_tech(void) {
 }
 
 void print_charge(void) {
-  printf("%s\033[%d;%dH", colors.charge, start_row + 3, start_col + 47);
+  printf("%s\033[%d;%dH", colors.charge, state.start_row + 3, state.start_col + 47);
   if (!bat.is_charging) {
     printf("             "
            "\033[1B\033[13D             "
@@ -207,7 +205,13 @@ void print_charge(void) {
   }
 }
 
-void print_col(int core_rows) {
+void print_col(int blocks, int core_rows) {
+  static int prev_blocks = 0;
+
+  if (blocks == prev_blocks) {
+    return;
+  }
+
   const int diff = blocks - prev_blocks;
   const char *new_sym;
   int step, start, end;
@@ -226,19 +230,22 @@ void print_col(int core_rows) {
 
   int col = 0;
   for (int i = start; step * i < step * end; i += step) {
-    col = start_col + prev_blocks + 2 + i;
-    printf("%s\033[%d;%dH", inner_color, start_row + 1, col);
+    col = state.start_col + prev_blocks + 2 + i;
+    printf("%s\033[%d;%dH", state.inner_color, state.start_row + 1, col);
 
     for (int j = 0; j < core_rows; j++) {
       printf("%s\033[1B\033[1D", new_sym);
     }
   }
+
+  prev_blocks = blocks;
 }
 
 void print_bat(void) {
   const int core_rows = 6 + flags.fat;
+  const int blocks = bat.capacity / 3;
 
-  if (redraw) {
+  if (state.redraw) {
     const char *block_string = "█████████████████████████████████████\0";
     const char *empty_string = "                                     \0";
     char fill_blocks[150], empty_blocks[50];
@@ -248,12 +255,12 @@ void print_bat(void) {
     strncpy(empty_blocks, empty_string, MAX_BLOCKS_BIG - blocks);
     empty_blocks[MAX_BLOCKS_BIG - blocks] = '\0';
 
-    printf("\033[%d;%dH%s████████████████████████████████████████", start_row,
-           start_col, colors.shell);
+    printf("\033[%d;%dH%s████████████████████████████████████████", state.start_row,
+           state.start_col, colors.shell);
 
     for (int i = 1; i <= core_rows; i++) {
-      printf("\033[%d;%dH%s██%s%s%s%s████", start_row + i, start_col,
-             colors.shell, inner_color, fill_blocks, empty_blocks,
+      printf("\033[%d;%dH%s██%s%s%s%s████", state.start_row + i, state.start_col,
+             colors.shell, state.inner_color, fill_blocks, empty_blocks,
              colors.shell);
 
       if (i > 1 && i < core_rows) {
@@ -262,29 +269,26 @@ void print_bat(void) {
     }
 
     printf("\033[%d;%dH████████████████████████████████████████",
-           start_row + core_rows + 1, start_col);
+           state.start_row + core_rows + 1, state.start_col);
 
     if (!flags.fat && flags.live) {
       printf("\033[%d;%dH    \033[%d;%dH                                       "
              "      \r\n",
-             start_row + core_rows, start_col + 40, start_row + core_rows + 2,
-             start_col);
+             state.start_row + core_rows, state.start_col + 40, state.start_row + core_rows + 2,
+             state.start_col);
     }
-    redraw = false;
+    state.redraw = false;
   } else {
-    if (blocks != prev_blocks) {
-      print_col(core_rows);
-    }
+    print_col(blocks, core_rows);
   }
-  prev_blocks = blocks;
 }
 
 void define_position(void) {
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
-  rows = w.ws_row;
-  cols = w.ws_col;
+  state.term_rows = w.ws_row;
+  state.term_cols = w.ws_col;
 
   if (flags.inlin) {
     char buf[2];
@@ -310,30 +314,33 @@ void define_position(void) {
 
     tcsetattr(0, TCSANOW, &restore);
 
-    start_row = atoi(buf) + 1;
+    state.start_row = atoi(buf) + 1;
     const int min_rows = 10 + flags.fat;
-    if (rows - start_row < min_rows) {
+    if (state.term_rows - state.start_row < min_rows) {
       for (int j = 0; j < min_rows; j++) {
         printf("\r\n");
       }
-      start_row = rows - min_rows + 1;
+      state.start_row = state.term_rows - min_rows + 1;
     }
 
-    start_col = 3;
+    state.start_col = 3;
   } else {
     printf("\033[2J");
-    start_row = rows / 2 - 3;
-    start_col = cols / 2 - 21;
+    state.start_row = state.term_rows / 2 - 3;
+    state.start_col = state.term_cols / 2 - 21;
   }
 }
 
 void update_state(void) {
+  static int prev_digits = 0;
+  static const char *prev_inner_color = "";
+
   if (bat.capacity < 20) {
-    inner_color = colors.low;
+    state.inner_color = colors.low;
   } else if (bat.capacity < 60) {
-    inner_color = colors.mid;
+    state.inner_color = colors.mid;
   } else {
-    inner_color = colors.high;
+    state.inner_color = colors.high;
   }
 
   int data = 0;
@@ -344,46 +351,46 @@ void update_state(void) {
 
     if (flags.extra_colors == true) {
       if (bat.is_charging == true)
-        inner_color = colors.full;
+        state.inner_color = colors.full;
       else
-        inner_color = colors.left;
+        state.inner_color = colors.left;
     }
   } else if (flags.mode == temperature) {
     data = bat.temp;
 
     if (flags.extra_colors == true) {
-      inner_color = colors.temp;
+      state.inner_color = colors.temp;
     }
   } else if (flags.mode == health) {
     data = bat.health;
 
     if (flags.extra_colors == true) {
-      inner_color = colors.health;
+      state.inner_color = colors.health;
     }
   } else if (flags.mode == time_m) {
     data = bat.time;
 
     if (flags.extra_colors == true) {
       if (bat.is_charging == true)
-        inner_color = colors.full;
+        state.inner_color = colors.full;
       else
-        inner_color = colors.left;
+        state.inner_color = colors.left;
     }
   }
 
   if (flags.colors == false) {
-    inner_color = "\033[0m";
+    state.inner_color = "\033[0m";
   }
 
   if (prev_digits != count_digits(data)) {
-    redraw = true;
+    state.redraw = true;
   }
   prev_digits = count_digits(data);
 
-  if (inner_color != prev_inner_color) {
-    redraw = true;
+  if (state.inner_color != prev_inner_color) {
+    state.redraw = true;
   }
-  prev_inner_color = inner_color;
+  prev_inner_color = state.inner_color;
 }
 
 void print_big(bool redefine) {
@@ -395,16 +402,17 @@ void print_big(bool redefine) {
   print_bat();
   print_charge();
   print_tech();
-  print_number(start_row + 2);
+  print_number(state.start_row + 2);
 
   if (flags.inlin) {
-    printf("\033[%d;0H", start_row - 1);
+    printf("\033[%d;0H", state.start_row - 1);
   }
   printf("\r\n");
 }
 
 void print_small_bat_row(bool top) {
-  printf("  %s██%s", colors.shell, inner_color);
+  const int blocks = bat.capacity / 7;
+  printf("  %s██%s", colors.shell, state.inner_color);
   for (int i = 0; i < MAX_BLOCKS_SMALL; i++) {
     if (i < blocks) {
       printf("█");
@@ -451,4 +459,40 @@ void print_minimal(void) {
            "False\r\n",
            bat.power, bat.time / 60, bat.time % 60);
   }
+}
+
+void print_battery(bool redefine) {
+  flags.small ? print_small() : print_big(redefine);
+}
+
+void print_help(void) {
+  puts("Usage:\r\n"
+       "  battery [-lsmbdfne]\r\n"
+       "\r\n"
+       "Options\r\n"
+       "  -l, --live                       Monitor the battery live\r\n"
+       "  -s, --small                      Draw a small version of the "
+       "battery\r\n"
+       "  -i, --inline                     Draw the battery inline instead "
+       "  -t, --tech                       Draw the technology of the battery "
+       "of the center of the screen\r\n"
+       "  -f, --fat                        Draws a slightly thicker "
+       "battery\r\n"
+       "  -d, --digits                     Draw the current capacity as a "
+       "number in the "
+       "battery\r\n"
+       "  -m, --mode MODE                  Specify the mode to be printed "
+       "with "
+       "-d (c for "
+       "capacity, p for power, t for temperature, h for health)\r\n"
+       "  -e, --extra-colors               Disable extra core color patterns "
+       "for different "
+       "modes\r\n"
+       "  -m, --minimal                    Minimal print of the battery "
+       "status\r\n"
+       "  -c, --alt-charge                 Use alternate charging symbol "
+       "(requires nerd "
+       "fonts)\r\n"
+       "  -n, --no-color                   Disable colors\r\n"
+       "  -b, --bat-number BAT_NUMBER      Specify battery number");
 }

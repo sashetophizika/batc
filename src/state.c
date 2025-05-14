@@ -1,8 +1,9 @@
-#include "state.h"
 #include <unistd.h>
 
+#include "state.h"
+
 Battery bat = {0, 0, 0, 0, 0, false, NULL};
-Battery prev_bat = {0, 0, 0, 0, 0, false, NULL};
+DrawState state = {0, 0, 0, 0, true, ""};
 
 Colors colors = {.high = "\033[0;32m\0",
                  .mid = "\033[0;33m\0",
@@ -28,17 +29,3 @@ Flags flags = {.colors = true,
                .tech = false,
                .mode = capacity,
                .bat_number = ""};
-
-int start_row = 0;
-int start_col = 0;
-int rows = 0;
-int cols = 0;
-
-bool redraw = true;
-int prev_digits = 0;
-
-int blocks = 0;
-int prev_blocks = 0;
-
-const char *inner_color = "";
-const char *prev_inner_color = "";
