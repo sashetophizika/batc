@@ -8,24 +8,28 @@
 #include "print.h"
 #include "state.h"
 
+#define eq(s1, s2) strcmp(s1, s2) == 0
+#define hex(s) strtol(s, NULL, 16)
+#define toggle_flag(val) eq(val, "true\n") ? false : true;
+
 void color_to_ansi(char *color, const char **elem) {
-  if (strcmp(color, "none\n") == 0) {
+  if (eq(color, "none\n")) {
     *elem = "\033[0m\0";
-  } else if (strcmp(color, "black\n") == 0) {
+  } else if (eq(color, "black\n")) {
     *elem = "\033[0;30m\0";
-  } else if (strcmp(color, "red\n") == 0) {
+  } else if (eq(color, "red\n")) {
     *elem = "\033[0;31m\0";
-  } else if (strcmp(color, "green\n") == 0) {
+  } else if (eq(color, "green\n")) {
     *elem = "\033[0;32m\0";
-  } else if (strcmp(color, "yellow\n") == 0) {
+  } else if (eq(color, "yellow\n")) {
     *elem = "\033[0;33m\0";
-  } else if (strcmp(color, "blue\n") == 0) {
+  } else if (eq(color, "blue\n")) {
     *elem = "\033[0;34m\0";
-  } else if (strcmp(color, "magenta\n") == 0) {
+  } else if (eq(color, "magenta\n")) {
     *elem = "\033[0;35m\0";
-  } else if (strcmp(color, "cyan\n") == 0) {
+  } else if (eq(color, "cyan\n")) {
     *elem = "\033[0;36m\0";
-  } else if (strcmp(color, "white\n") == 0) {
+  } else if (eq(color, "white\n")) {
     *elem = "\033[0;37m\0";
   } else if (color[0] == '#') {
     char r[3], g[3], b[3];
@@ -38,9 +42,10 @@ void color_to_ansi(char *color, const char **elem) {
     b[2] = '\0';
 
     char *ansi_color = malloc(100);
-    snprintf(ansi_color, 100, "\033[38;2;%ld;%ld;%ldm", strtol(r, NULL, 16),
-             strtol(g, NULL, 16), strtol(b, NULL, 16));
+    snprintf(ansi_color, 100, "\033[38;2;%ld;%ld;%ldm", hex(r), hex(g), hex(b));
     *elem = ansi_color;
+  } else if (eq(color, "NULL\n")) {
+    *elem = NULL;
   } else {
     *elem = "\033[0m";
   }
@@ -160,47 +165,47 @@ void parse_config(void) {
       continue;
     }
 
-    if (!strcmp(key, "color_high")) {
+    if (eq(key, "color_high")) {
       color_to_ansi(val, &colors.high);
-    } else if (!strcmp(key, "color_mid")) {
+    } else if (eq(key, "color_mid")) {
       color_to_ansi(val, &colors.mid);
-    } else if (!strcmp(key, "color_low")) {
+    } else if (eq(key, "color_low")) {
       color_to_ansi(val, &colors.low);
-    } else if (!strcmp(key, "color_charge")) {
+    } else if (eq(key, "color_charge")) {
       color_to_ansi(val, &colors.charge);
-    } else if (!strcmp(key, "color_tech")) {
+    } else if (eq(key, "color_tech")) {
       color_to_ansi(val, &colors.tech);
-    } else if (!strcmp(key, "color_shell")) {
+    } else if (eq(key, "color_shell")) {
       color_to_ansi(val, &colors.shell);
-    } else if (!strcmp(key, "color_temp")) {
+    } else if (eq(key, "color_temp")) {
       color_to_ansi(val, &colors.temp);
-    } else if (!strcmp(key, "color_health")) {
+    } else if (eq(key, "color_health")) {
       color_to_ansi(val, &colors.health);
-    } else if (!strcmp(key, "color_full")) {
+    } else if (eq(key, "color_full")) {
       color_to_ansi(val, &colors.full);
-    } else if (!strcmp(key, "color_left")) {
+    } else if (eq(key, "color_left")) {
       color_to_ansi(val, &colors.left);
-    } else if (!strcmp(key, "color_number")) {
+    } else if (eq(key, "color_number")) {
       color_to_ansi(val, &colors.number);
-    } else if (!strcmp(key, "colors")) {
-      flags.colors = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "live")) {
-      flags.live = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "digits")) {
-      flags.digits = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "fat")) {
-      flags.fat = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "small")) {
-      flags.small = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "inline")) {
-      flags.inlin = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "minimal")) {
-      flags.minimal = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "alt_charge")) {
-      flags.alt_charge = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "extra_colors")) {
-      flags.extra_colors = strcmp(val, "true\n") ? false : true;
-    } else if (!strcmp(key, "mode")) {
+    } else if (eq(key, "colors")) {
+      flags.colors = toggle_flag(val);
+    } else if (eq(key, "live")) {
+      flags.live = toggle_flag(val);
+    } else if (eq(key, "digits")) {
+      flags.digits = toggle_flag(val);
+    } else if (eq(key, "fat")) {
+      flags.fat = toggle_flag(val);
+    } else if (eq(key, "small")) {
+      flags.small = toggle_flag(val);
+    } else if (eq(key, "inline")) {
+      flags.inlin = toggle_flag(val);
+    } else if (eq(key, "minimal")) {
+      flags.minimal = toggle_flag(val);
+    } else if (eq(key, "alt_charge")) {
+      flags.alt_charge = toggle_flag(val);
+    } else if (eq(key, "extra_colors")) {
+      flags.extra_colors = toggle_flag(val);
+    } else if (eq(key, "mode")) {
       if (val[0] == 'c') {
         flags.mode = capacity;
       } else if (val[0] == 't') {
@@ -210,7 +215,7 @@ void parse_config(void) {
       } else if (val[0] == 'h') {
         flags.mode = health;
       }
-    } else if (!strcmp(key, "bat_number")) {
+    } else if (eq(key, "bat_number")) {
       char buffer[50];
       sprintf(buffer, "/sys/class/power_supply/BAT%c", val[0]);
       DIR *power_supply_dir = opendir(buffer);
