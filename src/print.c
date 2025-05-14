@@ -139,7 +139,8 @@ void print_number(int row) {
 }
 
 void print_tech(void) {
-  printf("%s\033[%d;%dH", colors.tech, state.start_row + 2, state.start_col - 16);
+  printf("%s\033[%d;%dH", colors.tech, state.start_row + 2,
+         state.start_col - 16);
   if (!flags.tech) {
     printf("             "
            "\033[1B\033[13D             "
@@ -181,7 +182,8 @@ void print_tech(void) {
 }
 
 void print_charge(void) {
-  printf("%s\033[%d;%dH", colors.charge, state.start_row + 3, state.start_col + 47);
+  printf("%s\033[%d;%dH", colors.charge, state.start_row + 3,
+         state.start_col + 47);
   if (!bat.is_charging) {
     printf("             "
            "\033[1B\033[13D             "
@@ -255,13 +257,14 @@ void print_bat(void) {
     strncpy(empty_blocks, empty_string, MAX_BLOCKS_BIG - blocks);
     empty_blocks[MAX_BLOCKS_BIG - blocks] = '\0';
 
-    printf("\033[%d;%dH%s████████████████████████████████████████", state.start_row,
-           state.start_col, colors.shell);
+    printf("\033[%d;%dH%s████████████████████████████████████████",
+           state.start_row, state.start_col, colors.shell);
 
     for (int i = 1; i <= core_rows; i++) {
-      printf("\033[%d;%dH%s██%s%s%s%s████", state.start_row + i, state.start_col,
-             colors.shell, state.inner_color, fill_blocks, empty_blocks,
-             colors.shell);
+      printf("\033[%d;%dH", state.start_row + i, state.start_col);
+      printf("%s██", colors.shell);
+      printf("%s%s%s", state.inner_color, fill_blocks, empty_blocks);
+      printf("%s████", colors.shell);
 
       if (i > 1 && i < core_rows) {
         printf("████");
@@ -274,8 +277,8 @@ void print_bat(void) {
     if (!flags.fat && flags.live) {
       printf("\033[%d;%dH    \033[%d;%dH                                       "
              "      \r\n",
-             state.start_row + core_rows, state.start_col + 40, state.start_row + core_rows + 2,
-             state.start_col);
+             state.start_row + core_rows, state.start_col + 40,
+             state.start_row + core_rows + 2, state.start_col);
     }
     state.redraw = false;
   } else {
