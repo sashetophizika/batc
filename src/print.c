@@ -138,12 +138,14 @@ void print_number(int row) {
     data = bat.capacity;
   } else if (flags.mode == power) {
     data = bat.power;
+  } else if (flags.mode == time_m) {
+    data = bat.time;
   } else if (flags.mode == temperature) {
     data = bat.temp;
   } else if (flags.mode == health) {
     data = bat.health;
-  } else if (flags.mode == time_m) {
-    data = bat.time;
+  } else if (flags.mode == charge) {
+    data = bat.charge;
   }
 
   int digits = count_digits(data);
@@ -356,10 +358,7 @@ void define_position(void) {
   }
 }
 
-void update_state(void) {
-  static int prev_digits = 0;
-  static const char *prev_inner_color = "";
-
+void update_color(Mode mode) {
   if (bat.capacity < 20) {
     state.inner_color = colors.low;
   } else if (bat.capacity < 60) {
@@ -368,53 +367,56 @@ void update_state(void) {
     state.inner_color = colors.high;
   }
 
-  int data = 0;
-  if (flags.mode == capacity) {
-    data = bat.capacity;
-  } else if (flags.mode == power) {
-    data = bat.power;
-
-    if (flags.extra_colors == true) {
-      if (bat.is_charging == true)
-        state.inner_color = colors.full;
-      else
-        state.inner_color = colors.left;
-    }
-  } else if (flags.mode == temperature) {
-    data = bat.temp;
-
-    if (flags.extra_colors == true) {
-      state.inner_color = colors.temp;
-    }
-  } else if (flags.mode == health) {
-    data = bat.health;
-
-    if (flags.extra_colors == true) {
-      state.inner_color = colors.health;
-    }
-  } else if (flags.mode == time_m) {
-    data = bat.time;
-
-    if (flags.extra_colors == true) {
-      if (bat.is_charging == true)
-        state.inner_color = colors.full;
-      else
-        state.inner_color = colors.left;
-    }
+  if (!flags.extra_colors) {
+    return;
   }
+
+  if (mode == time_m || mode == power) {
+    if (bat.is_charging == true)
+      state.inner_color = colors.full;
+    else
+      state.inner_color = colors.left;
+  } else if (mode == temperature) {
+    state.inner_color = colors.temp;
+  } else if (mode == health || mode == charge) {
+    state.inner_color = colors.health;
+  }
+}
+
+int get_data(Mode mode) {
+  if (mode == capacity) {
+    return bat.capacity;
+  } else if (mode == temperature) {
+    return bat.temp;
+  } else if (mode == power) {
+    return bat.power;
+  } else if (mode == time_m) {
+    return bat.time;
+  } else if (mode == health) {
+    return bat.health;
+  } else if (mode == charge) {
+    return bat.charge;
+  }
+  return 0;
+}
+
+void update_state(void) {
+  static int prev_digits = 0;
+  static const char *prev_inner_color = "";
+
+  update_color(flags.mode);
+  int data = get_data(flags.mode);
 
   if (flags.colors == false) {
     state.inner_color = "\033[0m";
   }
 
-  if (prev_digits != count_digits(data)) {
+  if (prev_digits != count_digits(data) ||
+      state.inner_color != prev_inner_color) {
     state.redraw = true;
   }
-  prev_digits = count_digits(data);
 
-  if (state.inner_color != prev_inner_color) {
-    state.redraw = true;
-  }
+  prev_digits = count_digits(data);
   prev_inner_color = state.inner_color;
 }
 
@@ -435,7 +437,8 @@ void print_big(bool redefine) {
 
   if (flags.fetch && !flags.live) {
     printf("\033[1B");
-    print_minimal(LEFTPAD_BIG - (bat.is_charging ? 0 : CHARGE_SIZE_BIG));
+    print_minimal(LEFTPAD_BIG + flags.fat -
+                  (bat.is_charging ? 0 : CHARGE_SIZE_BIG));
   }
   printf("\r\n");
 }
@@ -493,19 +496,20 @@ void print_minimal(int padding) {
   printf("%s%s\033[1m%s\033[22m\033[0m\r\n", color_pad, colors.charge,
          bat_name(flags.bat_number));
 
-  printf("%sBattery\033[0m:       %d%%\r\n", color_pad, bat.capacity);
-  printf("%sHealth\033[0m:        %d%%\r\n", color_pad, bat.health);
-  printf("%sTemperature\033[0m:   %d°C\r\n", color_pad, bat.temp);
+  printf("%sBattery\033[0m:       %.1f%%\r\n", color_pad, bat.capacity);
+  printf("%sHealth\033[0m:        %.1f%%\r\n", color_pad, bat.health);
+  printf("%sMax Charge\033[0m:    %.1fWh\r\n", color_pad, bat.charge);
+  printf("%sTemperature\033[0m:   %.1f°C\r\n", color_pad, bat.temp);
   printf("%sTechnology\033[0m:    %s\r", color_pad, bat.tech);
 
   if (bat.is_charging) {
     printf("%sCharging\033[0m:      True\r\n", color_pad);
-    printf("%sPower In\033[0m:      %dW\r\n", color_pad, bat.power);
+    printf("%sPower In\033[0m:      %.1fW\r\n", color_pad, bat.power);
     printf("%sTime to Full\033[0m:  %dH %dM\r\n", color_pad, bat.time / 60,
            bat.time % 60);
   } else {
     printf("%sCharging\033[0m:      False\r\n", color_pad);
-    printf("%sPower Draw\033[0m:    %dW\r\n", color_pad, bat.power);
+    printf("%sPower Draw\033[0m:    %.1fW\r\n", color_pad, bat.power);
     printf("%sTime Left\033[0m:     %dH %dM\r\n", color_pad, bat.time / 60,
            bat.time % 60);
   }

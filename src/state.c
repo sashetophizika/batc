@@ -2,7 +2,7 @@
 
 #include "state.h"
 
-Battery bat = {0, 0, 0, 0, 0, false, NULL};
+Battery bat = {0, 0, 0, 0, 0, 0, false, NULL};
 DrawState state = {0, 0, 0, 0, true, ""};
 
 Colors colors = {.high = "\033[0;32m\0",

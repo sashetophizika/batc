@@ -6,14 +6,22 @@
     x = x ? false : true;                                                      \
   }
 
-typedef enum Mode { capacity, power, temperature, health, time_m } Mode;
+typedef enum Mode {
+  capacity,
+  power,
+  temperature,
+  time_m,
+  health,
+  charge,
+} Mode;
 
 typedef struct Battery {
-  int capacity;
-  int temp;
-  int power;
-  int health;
   int time;
+  float capacity;
+  float temp;
+  float power;
+  float health;
+  float charge;
   bool is_charging;
   const char *tech;
 } Battery;

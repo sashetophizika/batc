@@ -59,7 +59,7 @@ void bat_status(bool full) {
 
   if (flags.mode == temperature || full) {
     char *temp = get_param("temp");
-    bat.temp = atoi(temp) / 10;
+    bat.temp = atoi(temp) / 10.;
     free(temp);
   }
 
@@ -106,6 +106,19 @@ void bat_status(bool full) {
     free(cf);
     free(cd);
 
-    bat.health = 100 * charge_full / charge_full_design;
+    bat.health = 100.0 * charge_full / charge_full_design;
+  }
+
+  if (flags.mode == charge || full) {
+    char *cf = get_param("charge_full");
+    char *vm = get_param("voltage_min_design");
+    const long charge_full = atoi(cf);
+    const long voltage_min = atoi(vm);
+
+    free(cf);
+    free(vm);
+
+    float charge = charge_full * voltage_min / 100000000000.0;
+    bat.charge = charge / 10.0;
   }
 }

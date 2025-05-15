@@ -45,6 +45,10 @@ int handle_input(char c) {
       flags.mode = time_m;
     } else if (flags.mode == time_m) {
       flags.mode = power;
+    } else if (flags.mode == health) {
+      flags.mode = charge;
+    } else if (flags.mode == charge) {
+      flags.mode = health;
     }
 
     bat_status(false);
