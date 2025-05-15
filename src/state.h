@@ -48,6 +48,7 @@ typedef struct Flags {
   bool small;
   bool digits;
   bool fat;
+  bool fetch;
   bool alt_charge;
   bool extra_colors;
   bool inlin;

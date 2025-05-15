@@ -17,7 +17,7 @@ void cleanup(void) {
   printf("\033[0m\033[?25h");
   if (flags.small) {
     printf("\033[5B");
-  } else if (flags.inlin) {
+  } else if (flags.inlin || flags.fetch) {
     printf("\033[3B\033[%d;0H", state.start_row + 8 + flags.fat);
   } else if (flags.live) {
     printf("\033[?47l\033[u");
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
   setup();
 
   if (flags.minimal) {
-    print_minimal();
+    print_minimal(0);
     exit(0);
   }
 

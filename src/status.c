@@ -18,7 +18,7 @@ char *get_param(const char *param) {
 
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
-    if (!flags.live && !flags.minimal) {
+    if (!flags.live && !flags.minimal && !flags.fetch) {
       printf("Error: file %s not found.", fn);
     }
 

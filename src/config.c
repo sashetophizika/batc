@@ -53,9 +53,10 @@ void color_to_ansi(char *color, const char **elem) {
 
 void parse_flags(int argc, char **argv) {
   static struct option long_options[] = {
-      {"mode", required_argument, NULL, 'm'},
+      {"mode", required_argument, NULL, 'M'},
       {"bat-number", required_argument, NULL, 'b'},
       {"fat", no_argument, NULL, 'f'},
+      {"fetch", no_argument, NULL, 'F'},
       {"no-color", no_argument, NULL, 'n'},
       {"digits", no_argument, NULL, 'd'},
       {"alt-charge", no_argument, NULL, 'c'},
@@ -69,7 +70,7 @@ void parse_flags(int argc, char **argv) {
 
   char opt = 0;
   while (opt != -1) {
-    opt = getopt_long(argc, argv, ":hnlmtM:csidfb:", long_options, NULL);
+    opt = getopt_long(argc, argv, ":hnlmtM:csidfFb:", long_options, NULL);
     switch (opt) {
     case 'n':
       toggle(flags.colors);
@@ -94,6 +95,9 @@ void parse_flags(int argc, char **argv) {
       break;
     case 'f':
       toggle(flags.fat);
+      break;
+    case 'F':
+      toggle(flags.fetch);
       break;
     case 'c':
       toggle(flags.alt_charge);
@@ -195,6 +199,8 @@ void parse_config(void) {
       flags.digits = toggle_flag(val);
     } else if (eq(key, "fat")) {
       flags.fat = toggle_flag(val);
+    } else if (eq(key, "fetch")) {
+      flags.fetch = toggle_flag(val);
     } else if (eq(key, "small")) {
       flags.small = toggle_flag(val);
     } else if (eq(key, "inline")) {

@@ -11,6 +11,24 @@
 
 #define MAX_BLOCKS_BIG 33
 #define MAX_BLOCKS_SMALL 14
+#define LEFTPAD_BIG 63
+#define LEFTPAD_SMALL 31
+#define CHARGE_SIZE_BIG 13
+#define CHARGE_SIZE_SMALL 6
+
+char *bat_name(char *batfile) {
+  char *tempstr = calloc(strlen(batfile) + 1, sizeof(char));
+  strcpy(tempstr, batfile);
+
+  char *name = strtok(tempstr, "/");
+  char *temp = name;
+
+  while (temp != NULL) {
+    name = temp;
+    temp = strtok(NULL, "/");
+  }
+  return name;
+}
 
 void print_digit(int digit, int row, int col) {
   int bitstring;
@@ -293,7 +311,7 @@ void define_position(void) {
   state.term_rows = w.ws_row;
   state.term_cols = w.ws_col;
 
-  if (flags.inlin) {
+  if (flags.inlin || flags.fetch) {
     char buf[2];
     int i = 0;
     char c = '\0';
@@ -407,8 +425,13 @@ void print_big(bool redefine) {
   print_tech();
   print_number(state.start_row + 2);
 
-  if (flags.inlin) {
+  if (flags.inlin || flags.fetch) {
     printf("\033[%d;0H", state.start_row - 1);
+  }
+
+  if (flags.fetch && !flags.live) {
+    printf("\033[1B");
+    print_minimal(LEFTPAD_BIG - (bat.is_charging ? 0 : CHARGE_SIZE_BIG));
   }
   printf("\r\n");
 }
@@ -444,23 +467,43 @@ void print_small_bat(void) {
 void print_small(void) {
   update_state();
   print_small_bat();
-  printf("\033[5F");
+
+  printf("\r\033[5F");
+  if (flags.fetch && !flags.live) {
+    print_minimal(LEFTPAD_SMALL - (bat.is_charging ? 0 : CHARGE_SIZE_SMALL));
+  }
 }
 
-void print_minimal(void) {
+void print_minimal(int padding) {
   bat_status(1);
-  printf("Battery:       %d%%\r\nHealth:        "
-         "%d%%\r\nTemperature:   %d°C\r\nTechnology:    "
-         "%s\r",
-         bat.capacity, bat.health, bat.temp, bat.tech);
-  if (bat.is_charging) {
-    printf("Charging:      True\r\nPower In:      %dW\r\nTime to Full:  %dH "
-           "%dM\r\n",
-           bat.power, bat.time / 60, bat.time % 60);
+  char color_pad[50];
+  const char *key_color = NULL;
+
+  if (padding == 0) {
+    key_color = "\033[0m";
   } else {
-    printf("Charging:      False\r\nPower Draw:    %dW\r\nTime Left:     %dH "
-           "%dM\r\n",
-           bat.power, bat.time / 60, bat.time % 60);
+    key_color = state.inner_color;
+  }
+
+  snprintf(color_pad, 50, "\033[%dC%s", padding, key_color);
+  printf("%s%s\033[1m%s\033[22m\033[0m\r\n", color_pad, colors.charge,
+         bat_name(flags.bat_number));
+
+  printf("%sBattery\033[0m:       %d%%\r\n", color_pad, bat.capacity);
+  printf("%sHealth\033[0m:        %d%%\r\n", color_pad, bat.health);
+  printf("%sTemperature\033[0m:   %d°C\r\n", color_pad, bat.temp);
+  printf("%sTechnology\033[0m:    %s\r", color_pad, bat.tech);
+
+  if (bat.is_charging) {
+    printf("%sCharging\033[0m:      True\r\n", color_pad);
+    printf("%sPower In\033[0m:      %dW\r\n", color_pad, bat.power);
+    printf("%sTime to Full\033[0m:  %dH %dM\r\n", color_pad, bat.time / 60,
+           bat.time % 60);
+  } else {
+    printf("%sCharging\033[0m:      False\r\n", color_pad);
+    printf("%sPower Draw\033[0m:    %dW\r\n", color_pad, bat.power);
+    printf("%sTime Left\033[0m:     %dH %dM\r\n", color_pad, bat.time / 60,
+           bat.time % 60);
   }
 }
 
