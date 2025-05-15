@@ -157,6 +157,10 @@ void print_number(int row) {
 }
 
 void print_tech(void) {
+  if (flags.inlin || flags.fetch) {
+    return;
+  }
+
   printf("%s\033[%d;%dH", colors.tech, state.start_row + 2,
          state.start_col - 16);
   if (!flags.tech) {
