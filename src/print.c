@@ -454,12 +454,12 @@ void print_minimal(void) {
          "%s\r",
          bat.capacity, bat.health, bat.temp, bat.tech);
   if (bat.is_charging) {
-    printf("Power In:      %dW\r\nTime to Full:  %dH %dM\r\nCharging:      "
-           "True\r\n",
+    printf("Charging:      True\r\nPower In:      %dW\r\nTime to Full:  %dH "
+           "%dM\r\n",
            bat.power, bat.time / 60, bat.time % 60);
   } else {
-    printf("Power Draw:    %dW\r\nTime Left:     %dH %dM\r\nCharging:      "
-           "False\r\n",
+    printf("Charging:      False\r\nPower Draw:    %dW\r\nTime Left:     %dH "
+           "%dM\r\n",
            bat.power, bat.time / 60, bat.time % 60);
   }
 }
@@ -476,26 +476,22 @@ void print_help(void) {
        "  -l, --live                       Monitor the battery live\r\n"
        "  -s, --small                      Draw a small version of the "
        "battery\r\n"
-       "  -i, --inline                     Draw the battery inline instead "
-       "  -t, --tech                       Draw the technology of the battery "
+       "  -i, --inline                     Draw the battery inline instead"
        "of the center of the screen\r\n"
+       "  -t, --tech                       Draw the technology of the "
+       "battery\r\n"
        "  -f, --fat                        Draws a slightly thicker "
        "battery\r\n"
        "  -d, --digits                     Draw the current capacity as a "
-       "number in the "
-       "battery\r\n"
-       "  -m, --mode MODE                  Specify the mode to be printed "
-       "with "
-       "-d (c for "
-       "capacity, p for power, t for temperature, h for health)\r\n"
+       "number in the battery\r\n"
+       "  -m, --mode MODE                  Specify what to be "
+       "printed with -d (capacity, power, temperature or health)\r\n"
        "  -e, --extra-colors               Disable extra core color patterns "
-       "for different "
-       "modes\r\n"
+       "for different modes\r\n"
        "  -m, --minimal                    Minimal print of the battery "
        "status\r\n"
        "  -c, --alt-charge                 Use alternate charging symbol "
-       "(requires nerd "
-       "fonts)\r\n"
+       "(requires nerd fonts)\r\n"
        "  -n, --no-color                   Disable colors\r\n"
        "  -b, --bat-number BAT_NUMBER      Specify battery number");
 }

@@ -23,21 +23,21 @@ sudo make install # system installation
 
 ### Basic:
 ```
-$ batc
-```
+$ batc [OPTIONS]
+``` 
 ### Options:
 
 * **-l, --live**: monitor the battery live (close with `q` or `Esc`)
-* **-s, --small**: print a small inline battery instead
 * **-i, --inline**: print the battery inline instead of the center of the screen
-* **-t, --t**: print the technology of the battery shortened
+* **-s, --small**: print a small inline battery (requires nerd fonts)
+* **-t, --tech**: print the technology of the battery shortened
 * **-f, --fat**: print a slightly thicker battery
 * **-d, --digits**: print the current capacity as a number inside of the battery (does not work with -s)
-* **-M, --mode=(mode)**: specify mode to be printed with -d (c for capacity, p for power in or power draw, t for temperature, h for health)
+* **-M, --mode=(mode)**: specify what to be printed with -d (capacity, temperature, or health)
 * **-e, --extra-colors**: disable extra core color pattern for different modes
-* **-m, --minimal**: print minimal text output
 * **-c, --alt-charge**: use an alternate charging symbol (requires nerd fonts)
-* **-n, --no-color**: remove colors
+* **-m, --minimal**: print minimal text output
+* **-n, --no-color**: disable colors
 * **-b, --bat-number=(bat_number)**: specify the battery number (default is the lowest one)
 
 ### Keybinds:
@@ -50,7 +50,7 @@ In live mode you can use some keybinds.
 * **c**: toggle alt_charge
 * **m**: cycle mode
 * **1**: capacity mode
-* **2**: tempertature mode
+* **2**: temp mode
 * **3**: power mode
 * **4**: health mode
 * **5**: time mode
@@ -81,7 +81,7 @@ color_tech = cyan    # color of the technology symbol
 color_number = NULL  # color of the number inside
 
 mode = capacity      # c or capacity in percent, 
-                     # t or temp in celsius,
+                     # t or temperature in celsius,
                      # p or power in watts,
                      # h or health in percent
 
