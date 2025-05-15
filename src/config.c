@@ -10,7 +10,7 @@
 
 #define eq(s1, s2) strcmp(s1, s2) == 0
 #define hex(s) strtol(s, NULL, 16)
-#define toggle_flag(val) eq(val, "true\n") ? false : true;
+#define toggle_flag(val) eq(val, "true\n") ? true : false;
 
 void color_to_ansi(char *color, const char **elem) {
   if (eq(color, "none\n")) {
