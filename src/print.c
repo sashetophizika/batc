@@ -525,6 +525,8 @@ void print_help(void) {
        "battery\r\n"
        "  -f, --fat                        Draws a slightly thicker "
        "battery\r\n"
+       "  -F, --fetch                      Adds extra information beside the "
+       "battery\r\n"
        "  -d, --digits                     Draw the current capacity as a "
        "number in the battery\r\n"
        "  -m, --mode MODE                  Specify what to be "

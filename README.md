@@ -2,13 +2,17 @@
 
 ### Simple utility to monitor the battery in a stylish manner.
 
-![image](images/screenshot.png "screenshot")
+![image](images/default.png "default")
 ### Small version:
 
-![image](images/screenshot_small.png "screenshot_small")
+![image](images/small.png "small")
 ### Version with some extra options:
 
-![image](images/screenshot_full.png "screenshot_full")
+![image](images/full.png "full")
+
+### Fetch style:
+
+![image](images/fetch.png "fetch")
 
 ## Installation
 
@@ -32,6 +36,7 @@ $ batc [OPTIONS]
 * **-s, --small**: print a small inline battery (requires nerd fonts)
 * **-t, --tech**: print the technology of the battery shortened
 * **-f, --fat**: print a slightly thicker battery
+* **-F, --fetch**: adds extra information beside the battery
 * **-d, --digits**: print the current capacity as a number inside of the battery (does not work with -s)
 * **-M, --mode=(mode)**: specify what to be printed with -d (capacity, temperature, or health)
 * **-e, --extra-colors**: disable extra core color pattern for different modes
@@ -61,7 +66,7 @@ You can create a file named `~/.config/batc/batc.conf` or `~/.config/batc/config
 
 ### Default configuration:
 
-```python
+```ruby
 # colors can be one of 
 # [red | green | yellow | blue | magenta | cyan | white | black | none]
 # or a hex code (e.g., #0000ff)
