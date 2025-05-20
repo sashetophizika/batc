@@ -453,7 +453,7 @@ void print_big(bool redefine) {
   print_number(state.start_row + 2);
 
   if (flags.inlin || flags.fetch) {
-    printf("\033[%d;0H", state.start_row + flags.fetch - 1);
+    printf("\033[%d;0H", state.start_row + 2 * flags.fetch - 1);
   }
 
   printf("\r\n");
@@ -549,7 +549,7 @@ void print_minimal(int padding) {
     printf("\033[9F");
   }
 
-  if (prev_padding == 0) {
+  if (prev_padding == 0 || state.redraw) {
     print_keys(padding);
     printf("\033[9F");
   }

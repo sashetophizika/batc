@@ -34,7 +34,7 @@ void setup(void) {
   system("/bin/stty raw -echo");
   printf("\033[?25l");
 
-  if (flags.live && !(flags.small || flags.inlin)) {
+  if (flags.live && !(flags.small || flags.inlin || flags.fetch)) {
     printf("\033[?47h\033[s");
   }
 
