@@ -432,7 +432,7 @@ void print_fetch(void) {
   if (flags.small) {
     padding = LEFTPAD_SMALL - (bat.is_charging ? 0 : CHARGE_SIZE_SMALL);
   } else {
-    padding = LEFTPAD_BIG - (bat.is_charging ? 0 + flags.fat : CHARGE_SIZE_BIG);
+    padding = LEFTPAD_BIG - (bat.is_charging ? 0 + !flags.fat : CHARGE_SIZE_BIG);
     printf("\033[%d;0H", state.start_row + flags.fetch - 1);
   }
 
@@ -453,7 +453,7 @@ void print_big(bool redefine) {
   print_number(state.start_row + 2);
 
   if (flags.inlin || flags.fetch) {
-    printf("\033[%d;0H", state.start_row + 2 * flags.fetch - 1);
+    printf("\033[%d;0H", state.start_row + 2 * flags.fetch + flags.fat - 1);
   }
 
   printf("\r\n");
