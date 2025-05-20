@@ -16,9 +16,9 @@ typedef enum Mode {
 } Mode;
 
 typedef struct Battery {
+  int capacity;
+  int temp;
   int time;
-  float capacity;
-  float temp;
   float power;
   float health;
   float charge;
@@ -69,3 +69,5 @@ extern Battery bat;
 extern Colors colors;
 extern Flags flags;
 extern DrawState state;
+
+bool bat_eq(Battery *bat1, Battery *bat2);

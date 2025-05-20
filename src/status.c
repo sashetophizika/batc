@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "state.h"
 #include "status.h"
@@ -16,20 +17,18 @@ char *get_param(const char *param) {
     strcpy(fn, "./debug/capacity");
 #endif
 
+  if (access(fn, F_OK)) {
+    line = calloc(1, sizeof(char));
+    return line;
+  }
+
   FILE *fp = fopen(fn, "r");
   if (fp == NULL) {
-    if (!flags.live && !flags.minimal && !flags.fetch) {
-      printf("Error: file %s not found.", fn);
-    }
-
-    line = malloc(3);
-    memset(line, '0', 2);
-    line[2] = '\0';
+    line = calloc(1, sizeof(char));
     return line;
   }
 
   getline(&line, &len, fp);
-
   fclose(fp);
   return line;
 }
@@ -106,7 +105,7 @@ void bat_status(bool full) {
     free(cf);
     free(cd);
 
-    bat.health = 100.0 * charge_full / charge_full_design;
+    bat.health = 100.0 * charge_full / (charge_full_design + 1);
   }
 
   if (flags.mode == charge || full) {

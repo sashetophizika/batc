@@ -3,8 +3,6 @@
 
 void print_charge(void);
 
-void print_fetch(int padding);
-
 void print_minimal(int padding);
 
 void print_battery(bool redefine);

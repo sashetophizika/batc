@@ -15,9 +15,11 @@ void cleanup(void) {
   system("/bin/stty cooked echo");
 
   printf("\033[0m\033[?25h");
-  if (flags.small) {
+  if (flags.fetch) {
+    printf("\033[%dB", 7 + 2 * flags.small);
+  } else if (flags.small) {
     printf("\033[5B");
-  } else if (flags.inlin || flags.fetch) {
+  } else if (flags.inlin) {
     printf("\033[3B\033[%d;0H", state.start_row + 8 + flags.fat);
   } else if (flags.live) {
     printf("\033[?47l\033[u");
@@ -51,7 +53,7 @@ void setup(void) {
         bat_index = bat_dirs->d_name[3];
       }
     }
-    sprintf(flags.bat_number, "/sys/class/power_supply/BAT%c", bat_index);
+    snprintf(flags.bat_number, 50, "/sys/class/power_supply/BAT%c", bat_index);
     closedir(power_supply_dir);
   }
 }
@@ -72,11 +74,12 @@ int main(int argc, char **argv) {
   setup();
 
   if (flags.minimal) {
+    bat_status(true);
     print_minimal(0);
     exit(0);
   }
 
-  bat_status(false);
+  bat_status(flags.fetch);
   print_battery(true);
 
   struct winsize w;
@@ -87,30 +90,41 @@ int main(int argc, char **argv) {
     pthread_create(&thread, NULL, event_loop, NULL);
 
     while (true) {
+      bool should_print = false;
+      bool should_redefine = false;
+      if (flags.fetch && bat_eq(&bat, &prev_bat)) {
+        should_print = true;
+      }
+
       if (!flags.small || flags.digits) {
         if (flags.mode == temperature && prev_bat.temp != bat.temp) {
-          print_battery(false);
+          should_print = true;
         } else if (flags.mode == power && prev_bat.power != bat.power) {
-          print_battery(false);
+          should_print = true;
         } else if (flags.mode == health && prev_bat.health != bat.health) {
-          print_battery(false);
+          should_print = true;
         }
       }
 
       if (prev_bat.capacity != bat.capacity ||
           prev_bat.is_charging != bat.is_charging) {
-        print_battery(false);
+        should_print = true;
       }
 
       ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
       if (w.ws_row != state.term_rows || w.ws_col != state.term_cols) {
         state.redraw = true;
-        print_battery(true);
+        should_print = true;
+        should_redefine = true;
+      }
+
+      if (should_print) {
+        print_battery(should_redefine);
       }
 
       loop_sleep();
       prev_bat = bat;
-      bat_status(false);
+      bat_status(flags.fetch);
     }
   }
 }

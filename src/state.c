@@ -30,3 +30,13 @@ Flags flags = {.colors = true,
                .tech = false,
                .mode = capacity,
                .bat_number = ""};
+
+bool bat_eq(Battery *bat1, Battery *bat2) {
+  if (bat1->capacity == bat2->capacity && bat1->temp == bat2->temp &&
+      bat1->power == bat2->power && bat1->time == bat2->time &&
+      bat1->charge == bat2->charge && bat1->health == bat2->health &&
+      bat1->is_charging == bat2->is_charging) {
+    return true;
+  }
+  return false;
+}

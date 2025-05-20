@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +8,6 @@
 
 #include "print.h"
 #include "state.h"
-#include "status.h"
 
 #define MAX_BLOCKS_BIG 33
 #define MAX_BLOCKS_SMALL 14
@@ -18,7 +18,7 @@
 
 char *bat_name(char *batfile) {
   char *tempstr = calloc(strlen(batfile) + 1, sizeof(char));
-  strcpy(tempstr, batfile);
+  strncpy(tempstr, batfile, strlen(batfile) + 1);
 
   char *name = strtok(tempstr, "/");
   char *temp = name;
@@ -209,9 +209,12 @@ void print_charge(void) {
   printf("%s\033[%d;%dH", colors.charge, state.start_row + 3,
          state.start_col + 47);
   if (!bat.is_charging) {
-    printf("             "
-           "\033[1B\033[13D             "
-           "\033[1B\033[13D             ");
+    const char *clear = flags.fetch ? " " : "             ";
+    const int back = flags.fetch ? 1 : 13;
+    printf("%1$s"
+           "\033[1B\033[%2$dD%1$s"
+           "\033[1B\033[%2$dD%1$s",
+           clear, back);
   } else if (flags.fat && flags.alt_charge) {
     printf("   ███████ "
            "\033[1B\033[13D    ██     "
@@ -420,26 +423,39 @@ void update_state(void) {
   prev_inner_color = state.inner_color;
 }
 
+void print_fetch(void) {
+  if (!flags.fetch) {
+    return;
+  }
+
+  int padding = 0;
+  if (flags.small) {
+    padding = LEFTPAD_SMALL - (bat.is_charging ? 0 : CHARGE_SIZE_SMALL);
+  } else {
+    padding = LEFTPAD_BIG - (bat.is_charging ? 0 + flags.fat : CHARGE_SIZE_BIG);
+    printf("\033[%d;0H", state.start_row + flags.fetch - 1);
+  }
+
+  print_minimal(padding);
+  printf("\r\033[%dF", 8 + flags.small);
+}
+
 void print_big(bool redefine) {
   if (redefine == true) {
     define_position();
   }
 
   update_state();
+  print_fetch();
   print_bat();
   print_charge();
   print_tech();
   print_number(state.start_row + 2);
 
   if (flags.inlin || flags.fetch) {
-    printf("\033[%d;0H", state.start_row - 1);
+    printf("\033[%d;0H", state.start_row + flags.fetch - 1);
   }
 
-  if (flags.fetch && !flags.live) {
-    printf("\033[1B");
-    print_minimal(LEFTPAD_BIG + flags.fat -
-                  (bat.is_charging ? 0 : CHARGE_SIZE_BIG));
-  }
   printf("\r\n");
 }
 
@@ -456,7 +472,7 @@ void print_small_bat_row(bool top) {
   printf("%s████", colors.shell);
 
   if (!bat.is_charging) {
-    printf("               \r\n");
+    printf("%s\r\n", flags.fetch ? "   " : "               ");
   } else if (top) {
     printf("   %s▄▄▄\r\n", colors.charge);
   } else {
@@ -473,16 +489,12 @@ void print_small_bat(void) {
 
 void print_small(void) {
   update_state();
+  print_fetch();
   print_small_bat();
-
   printf("\r\033[5F");
-  if (flags.fetch && !flags.live) {
-    print_minimal(LEFTPAD_SMALL - (bat.is_charging ? 0 : CHARGE_SIZE_SMALL));
-  }
 }
 
-void print_minimal(int padding) {
-  bat_status(1);
+void print_keys(int padding) {
   char color_pad[50];
   const char *key_color = NULL;
 
@@ -491,28 +503,59 @@ void print_minimal(int padding) {
   } else {
     key_color = state.inner_color;
   }
-
   snprintf(color_pad, 50, "\033[%dC%s", padding, key_color);
+
   printf("%s%s\033[1m%s\033[22m\033[0m\r\n", color_pad, colors.charge,
          bat_name(flags.bat_number));
-
-  printf("%sBattery\033[0m:       %.1f%%\r\n", color_pad, bat.capacity);
-  printf("%sHealth\033[0m:        %.1f%%\r\n", color_pad, bat.health);
-  printf("%sMax Charge\033[0m:    %.1fWh\r\n", color_pad, bat.charge);
-  printf("%sTemperature\033[0m:   %.1f°C\r\n", color_pad, bat.temp);
-  printf("%sTechnology\033[0m:    %s\r", color_pad, bat.tech);
+  printf("%sBattery\033[0m:\r\n", color_pad);
+  printf("%sHealth\033[0m:\r\n", color_pad);
+  printf("%sMax Charge\033[0m:\r\n", color_pad);
+  printf("%sTemperature\033[0m:\r\n", color_pad);
+  printf("%sTechnology\033[0m:\r\n", color_pad);
 
   if (bat.is_charging) {
-    printf("%sCharging\033[0m:      True\r\n", color_pad);
-    printf("%sPower In\033[0m:      %.1fW\r\n", color_pad, bat.power);
-    printf("%sTime to Full\033[0m:  %dH %dM\r\n", color_pad, bat.time / 60,
-           bat.time % 60);
+    printf("%sCharging\033[0m:\r\n", color_pad);
+    printf("%sPower In\033[0m:\r\n", color_pad);
+    printf("%sTime to Full\033[0m:\r\n", color_pad);
   } else {
-    printf("%sCharging\033[0m:      False\r\n", color_pad);
-    printf("%sPower Draw\033[0m:    %.1fW\r\n", color_pad, bat.power);
-    printf("%sTime Left\033[0m:     %dH %dM\r\n", color_pad, bat.time / 60,
-           bat.time % 60);
+    printf("%sCharging\033[0m:\r\n", color_pad);
+    printf("%sPower Draw\033[0m:\r\n", color_pad);
+    printf("%sTime Left\033[0m:\r\n", color_pad);
   }
+}
+
+void print_vals(int padding) {
+  const char *sweep = "             \033[13D";
+  printf("\033[0m\r\n");
+  printf("\033[%dC%s%d%%\r\n", padding, sweep, bat.capacity);
+  printf("\033[%dC%.1f%%\r\n", padding, bat.health);
+  printf("\033[%dC%.1fWh\r\n", padding, bat.charge);
+  printf("\033[%dC%s%d°C\r\n", padding, sweep, bat.temp);
+  printf("\033[%dC%s\r", padding, bat.tech);
+  printf("\033[%dC%s\r\n", padding, bat.is_charging ? "True" : "False");
+  printf("\033[%dC%s%.1fW\r\n", padding, sweep, bat.power);
+  printf("\033[%dC%s%dH %dM\r\n", padding, sweep, bat.time / 60, bat.time % 60);
+}
+
+void print_minimal(int padding) {
+  static int prev_padding = 0;
+
+  if (prev_padding != 0 && prev_padding != padding) {
+    for (int i = 0; i < 9; i++) {
+      printf("\033[%dC                           \r\n", prev_padding);
+    }
+    printf("\033[9F");
+    print_keys(padding);
+    printf("\033[9F");
+  }
+
+  if (prev_padding == 0) {
+    print_keys(padding);
+    printf("\033[9F");
+  }
+
+  prev_padding = padding;
+  print_vals(padding + 16);
 }
 
 void print_battery(bool redefine) {
@@ -533,13 +576,15 @@ void print_help(void) {
        "battery\r\n"
        "  -f, --fat                        Draws a slightly thicker "
        "battery\r\n"
-       "  -F, --fetch                      Adds extra information beside the "
+       "  -F, --fetch                      Adds extra information beside "
+       "the "
        "battery\r\n"
        "  -d, --digits                     Draw the current capacity as a "
        "number in the battery\r\n"
        "  -m, --mode MODE                  Specify what to be "
        "printed with -d (capacity, power, temperature or health)\r\n"
-       "  -e, --extra-colors               Disable extra core color patterns "
+       "  -e, --extra-colors               Disable extra core color "
+       "patterns "
        "for different modes\r\n"
        "  -m, --minimal                    Minimal print of the battery "
        "status\r\n"
