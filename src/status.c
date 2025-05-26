@@ -6,7 +6,7 @@
 #include "state.h"
 #include "status.h"
 
-char *get_param(const char *param) {
+static char *get_param(const char *param) {
   char *line = NULL;
   size_t len = 0;
   char fn[100];

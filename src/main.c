@@ -2,7 +2,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/ioctl.h>
+#include <termios.h>
 #include <unistd.h>
 
 #include "config.h"
@@ -11,10 +13,14 @@
 #include "state.h"
 #include "status.h"
 
-void cleanup(void) {
-  system("/bin/stty cooked echo");
+static void cleanup(void) {
+  struct termios term;
+  tcgetattr(STDIN_FILENO, &term);
+  term.c_lflag |= ECHO;
+  tcsetattr(STDIN_FILENO, TCSANOW, &term);
 
   printf("\033[0m\033[?25h");
+
   if (flags.fetch) {
     printf("\033[%dB", 7 + 2 * flags.small);
   } else if (flags.small) {
@@ -30,8 +36,12 @@ void cleanup(void) {
   }
 }
 
-void setup(void) {
-  system("/bin/stty raw -echo");
+static void setup(void) {
+  struct termios term;
+  tcgetattr(STDIN_FILENO, &term);
+  term.c_lflag &= ~(ICANON | ECHO);
+  tcsetattr(STDIN_FILENO, TCSANOW, &term);
+
   printf("\033[?25l");
 
   if (flags.live && !(flags.small || flags.inlin || flags.fetch)) {
@@ -53,12 +63,20 @@ void setup(void) {
         bat_index = bat_dirs->d_name[3];
       }
     }
-    snprintf(flags.bat_number, 50, "/sys/class/power_supply/BAT%c", bat_index);
+
+    char buffer[50];
+    snprintf(buffer, 50, "/sys/class/power_supply/BAT%c", bat_index);
+    if (opendir(buffer) == NULL) {
+      printf("No battery found.");
+      exit(0);
+    }
+
+    strncpy(flags.bat_number, buffer, 50);
     closedir(power_supply_dir);
   }
 }
 
-void loop_sleep(void) {
+static void loop_sleep(void) {
 #ifdef DEBUG
   usleep(2500);
 #else
@@ -70,14 +88,14 @@ int main(int argc, char **argv) {
   parse_config();
   parse_flags(argc, argv);
 
-  atexit(cleanup);
-  setup();
-
   if (flags.minimal) {
     bat_status(true);
     print_minimal(0);
     exit(0);
   }
+
+  atexit(cleanup);
+  setup();
 
   bat_status(flags.fetch);
   print_battery(true);

@@ -9,13 +9,13 @@
 #define Esc 27
 #define Ctrl_c 3
 
-void instant_update(void) {
+static void instant_update(void) {
   state.redraw = true;
   bat_status(false);
   print_battery(false);
 }
 
-int handle_input(char c) {
+static int handle_input(char c) {
   switch (c) {
   case 'd':
     toggle(flags.digits);

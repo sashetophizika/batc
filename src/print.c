@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ioctl.h>
-#include <termios.h>
 #include <unistd.h>
 
 #include "print.h"
@@ -16,7 +15,7 @@
 #define CHARGE_SIZE_BIG 13
 #define CHARGE_SIZE_SMALL 6
 
-char *bat_name(char *batfile) {
+static char *bat_name(char *batfile) {
   char *tempstr = calloc(strlen(batfile) + 1, sizeof(char));
   strncpy(tempstr, batfile, strlen(batfile) + 1);
 
@@ -30,7 +29,7 @@ char *bat_name(char *batfile) {
   return name;
 }
 
-void print_digit(int digit, int row, int col) {
+static void print_digit(int digit, int row, int col) {
   int bitstring;
   switch (digit) {
   case 0:                   // 111111
@@ -122,7 +121,7 @@ void print_digit(int digit, int row, int col) {
   printf("\033[%d;0H", row + flags.fat + 3);
 }
 
-int count_digits(int num) {
+static int count_digits(int num) {
   int count = 0;
   do {
     num /= 10;
@@ -132,7 +131,7 @@ int count_digits(int num) {
   return count;
 }
 
-void print_number(int row) {
+static void print_number(int row) {
   int data = 0;
   if (flags.mode == capacity) {
     data = bat.capacity;
@@ -158,7 +157,7 @@ void print_number(int row) {
   }
 }
 
-void print_tech(void) {
+static void print_tech(void) {
   if (flags.inlin || flags.fetch) {
     return;
   }
@@ -234,7 +233,7 @@ void print_charge(void) {
   }
 }
 
-void print_col(int blocks, int core_rows) {
+static void print_col(int blocks, int core_rows) {
   static int prev_blocks = 0;
 
   if (blocks == prev_blocks) {
@@ -270,7 +269,7 @@ void print_col(int blocks, int core_rows) {
   prev_blocks = blocks;
 }
 
-void print_bat(void) {
+static void print_bat(void) {
   const int core_rows = 6 + flags.fat;
   const int blocks = bat.capacity / 3;
 
@@ -313,7 +312,7 @@ void print_bat(void) {
   }
 }
 
-void define_position(void) {
+static void define_position(void) {
   struct winsize w;
   ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
@@ -325,15 +324,8 @@ void define_position(void) {
     int i = 0;
     char c = '\0';
 
-    struct termios term, restore;
-
-    tcgetattr(0, &term);
-    tcgetattr(0, &restore);
-    tcsetattr(0, TCSANOW, &term);
-    term.c_lflag &= ~(ICANON | ECHO);
-
-    write(1, "\033[6n", 4);
-    for (c = 0; c != 'R'; read(0, &c, 1)) {
+    write(STDOUT_FILENO, "\033[6n", 4);
+    for (c = 0; c != 'R'; read(STDIN_FILENO, &c, 1)) {
       if (c >= '0' && c <= '9' && i < 2) {
         buf[i] = c;
         i++;
@@ -341,8 +333,6 @@ void define_position(void) {
         i = 99;
       }
     }
-
-    tcsetattr(0, TCSANOW, &restore);
 
     state.start_row = atoi(buf) + 1;
     const int min_rows = 10 + flags.fat;
@@ -361,7 +351,7 @@ void define_position(void) {
   }
 }
 
-void update_color(Mode mode) {
+static void update_color(Mode mode) {
   if (bat.capacity < 20) {
     state.inner_color = colors.low;
   } else if (bat.capacity < 60) {
@@ -386,7 +376,7 @@ void update_color(Mode mode) {
   }
 }
 
-int get_data(Mode mode) {
+static int get_data(Mode mode) {
   if (mode == capacity) {
     return bat.capacity;
   } else if (mode == temperature) {
@@ -403,7 +393,7 @@ int get_data(Mode mode) {
   return 0;
 }
 
-void update_state(void) {
+static void update_state(void) {
   static int prev_digits = 0;
   static const char *prev_inner_color = "";
 
@@ -423,7 +413,7 @@ void update_state(void) {
   prev_inner_color = state.inner_color;
 }
 
-void print_fetch(void) {
+static void print_fetch(void) {
   if (!flags.fetch) {
     return;
   }
@@ -432,7 +422,8 @@ void print_fetch(void) {
   if (flags.small) {
     padding = LEFTPAD_SMALL - (bat.is_charging ? 0 : CHARGE_SIZE_SMALL);
   } else {
-    padding = LEFTPAD_BIG - (bat.is_charging ? 0 + !flags.fat : CHARGE_SIZE_BIG);
+    padding =
+        LEFTPAD_BIG - (bat.is_charging ? 0 + !flags.fat : CHARGE_SIZE_BIG);
     printf("\033[%d;0H", state.start_row + flags.fetch - 1);
   }
 
@@ -440,7 +431,7 @@ void print_fetch(void) {
   printf("\r\033[%dF", 8 + flags.small);
 }
 
-void print_big(bool redefine) {
+static void print_big(bool redefine) {
   if (redefine == true) {
     define_position();
   }
@@ -459,7 +450,7 @@ void print_big(bool redefine) {
   printf("\r\n");
 }
 
-void print_small_bat_row(bool top) {
+static void print_small_bat_row(bool top) {
   const int blocks = bat.capacity / 7;
   printf("  %s██%s", colors.shell, state.inner_color);
   for (int i = 0; i < MAX_BLOCKS_SMALL; i++) {
@@ -480,21 +471,21 @@ void print_small_bat_row(bool top) {
   }
 }
 
-void print_small_bat(void) {
+static void print_small_bat(void) {
   printf("\n  %s██████████████████\r\n", colors.shell);
   print_small_bat_row(true);
   print_small_bat_row(false);
   printf("  %s██████████████████\n", colors.shell);
 }
 
-void print_small(void) {
+static void print_small(void) {
   update_state();
   print_fetch();
   print_small_bat();
   printf("\r\033[5F");
 }
 
-void print_keys(int padding) {
+static void print_keys(int padding) {
   char color_pad[50];
   const char *key_color = NULL;
 
@@ -524,7 +515,7 @@ void print_keys(int padding) {
   }
 }
 
-void print_vals(int padding) {
+static void print_vals(int padding) {
   const char *sweep = "             \033[13D";
   printf("\033[0m\r\n");
   printf("\033[%dC%s%d%%\r\n", padding, sweep, bat.capacity);

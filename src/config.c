@@ -12,7 +12,7 @@
 #define hex(s) strtol(s, NULL, 16)
 #define toggle_flag(val) eq(val, "true\n") ? true : false;
 
-void color_to_ansi(char *color, const char **elem) {
+static void color_to_ansi(char *color, const char **elem) {
   if (eq(color, "none\n")) {
     *elem = "\033[0m\0";
   } else if (eq(color, "black\n")) {
