@@ -105,6 +105,8 @@ static int handle_input(char c) {
   case Esc:
   case Ctrl_c:
     exit(0);
+  default:
+    break;
   }
   return 1;
 }

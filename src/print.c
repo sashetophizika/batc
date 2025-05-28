@@ -500,49 +500,80 @@ static void print_small(void) {
   printf("\r\033[5F");
 }
 
-static void print_keys(int col) {
-  char color_pad[50];
-  const char *key_color = NULL;
+#define print_key(k)                                                           \
+  printf("%s%.*s%.*s\r\n", color_pad, max_len, k,                              \
+         max_len - (int)strlen(k) + 4, "\033[0m:");
 
-  if (col == 0) {
-    key_color = "\033[0m";
+static void print_keys(int col) {
+  int max_len;
+  if (state.term_cols) {
+    max_len = state.term_cols < col ? 0 : state.term_cols - col;
   } else {
-    key_color = state.inner_color;
+    max_len = 1000;
   }
-  snprintf(color_pad, 50, "\033[%dC%s", col, key_color);
+
+  char color_pad[50];
+  const char *key_color = col ? state.inner_color : "\033[0m";
 
   char *bat_num = bat_name(flags.bat_number);
-  printf("%s%s\033[1m%s\033[22m\033[0m\r\n", color_pad, colors.charge, bat_num);
+  printf("%s%s\033[1m%.*s\033[22m\033[0m\r\n", color_pad, colors.charge,
+         max_len, bat_num);
   free(bat_num);
 
-  printf("%sBattery\033[0m:\r\n", color_pad);
-  printf("%sHealth\033[0m:\r\n", color_pad);
-  printf("%sMax Charge\033[0m:\r\n", color_pad);
-  printf("%sTemperature\033[0m:\r\n", color_pad);
-  printf("%sTechnology\033[0m:\r\n", color_pad);
+  print_key("Battery");
+  print_key("Health");
+  print_key("Max Charge");
+  print_key("Temperature");
+  print_key("Technology");
+  print_key("Charging");
 
   if (bat.is_charging) {
-    printf("%sCharging\033[0m:\r\n", color_pad);
-    printf("%sPower In\033[0m:\r\n", color_pad);
-    printf("%sTime to Full\033[0m:\r\n", color_pad);
+    print_key("Power In");
+    print_key("Time to Full");
   } else {
-    printf("%sCharging\033[0m:\r\n", color_pad);
-    printf("%sPower Draw\033[0m:\r\n", color_pad);
-    printf("%sTime Left\033[0m:\r\n", color_pad);
+    print_key("Power Draw");
+    print_key("Time Left");
   }
 }
 
+static char *repeat(char c, int n) {
+  char *s = calloc(n, sizeof(char));
+  int max = n > 13 ? 13 : n;
+  for (int i = 0; i < max; i++) {
+    s[i] = c;
+  }
+  return s;
+}
+
+#define print_val(format, ...)                                                 \
+  snprintf(val_str, 10, format, __VA_ARGS__);                                  \
+  printf("\033[%dC%s%.*s\r\n", col, sweep, max_len, val_str);
+
 static void print_vals(int col) {
-  const char *sweep = "             \033[13D";
+  int max_len;
+  if (state.term_cols) {
+    max_len = state.term_cols < col ? 0 : state.term_cols - col;
+  } else {
+    max_len = 1000;
+  }
+
+  char sweep[30];
+  memset(sweep, 0, 30);
+  char *clean = repeat(' ', max_len);
+  snprintf(sweep, 30, "%s\033[%dD", clean, max_len > 13 ? 13 : max_len);
+  free(clean);
+
   printf("\033[0m\r\n");
-  printf("\033[%dC%s%d%%\r\n", col, sweep, bat.capacity);
-  printf("\033[%dC%.1f%%\r\n", col, bat.health);
-  printf("\033[%dC%.1fWh\r\n", col, bat.charge);
-  printf("\033[%dC%s%d°C\r\n", col, sweep, bat.temp);
-  printf("\033[%dC%s\r", col, bat.tech);
-  printf("\033[%dC%s\r\n", col, bat.is_charging ? "True" : "False");
-  printf("\033[%dC%s%.1fW\r\n", col, sweep, bat.power);
-  printf("\033[%dC%s%dH %dM\r\n", col, sweep, bat.time / 60, bat.time % 60);
+  char val_str[10];
+
+  print_val("%d%%", bat.capacity);
+  print_val("%.1f%%", bat.health);
+  print_val("%.1fWh", bat.charge);
+  print_val("%d°C", bat.temp);
+  print_val("%s", bat.tech);
+  print_val("%s", bat.is_charging ? "True" : "False");
+  print_val("%.1fW", bat.power);
+  print_val("%dH %dM", bat.time / 60, bat.time % 60);
 }
 
 void print_minimal(int col) {

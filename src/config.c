@@ -67,7 +67,7 @@ void set_bat_number(char num) {
   sprintf(buffer, "/sys/class/power_supply/BAT%c", num);
   DIR *power_supply_dir = opendir(buffer);
   if (power_supply_dir == NULL) {
-    printf("%s does not exist.", buffer);
+    printf("%s does not exist.\n", buffer);
     exit(0);
   }
   strcpy(flags.bat_number, buffer);

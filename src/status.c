@@ -53,7 +53,7 @@ bool get_is_charging(void) {
   return is_charging;
 }
 
-int get_temp(void) {
+float get_temp(void) {
   char *temp_str = get_param("temp");
   int temp = atoi(temp_str) / 10.;
   free(temp_str);
@@ -149,6 +149,8 @@ void bat_status(bool full) {
   }
 
   if (bat.tech == NULL) {
-    bat.tech = get_param("technology");
+    char *tech = get_param("technology");
+    tech[strcspn(tech, "\n")] = 0;
+    bat.tech = tech;
   }
 }
