@@ -2,8 +2,14 @@
 
 #include "state.h"
 
-Battery bat = {0, 0, 0, 0, 0, 0, false, NULL};
-DrawState state = {0, 0, 0, 0, true, ""};
+Battery bat = {.capacity = 0,
+               .temp = 0,
+               .power = 0,
+               .time = 0,
+               .health = 0,
+               .charge = 0,
+               .is_charging = false,
+               .tech = NULL};
 
 Colors colors = {.high = "\033[0;32m\0",
                  .mid = "\033[0;33m\0",
@@ -30,6 +36,13 @@ Flags flags = {.colors = true,
                .tech = false,
                .mode = capacity,
                .bat_number = ""};
+
+DrawState state = {.start_row = 0,
+                   .start_col = 0,
+                   .term_rows = 0,
+                   .term_cols = 0,
+                   .redraw = true,
+                   .inner_color = NULL};
 
 bool bat_eq(Battery *bat1, Battery *bat2) {
   if (bat1->capacity == bat2->capacity && bat1->temp == bat2->temp &&

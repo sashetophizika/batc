@@ -51,6 +51,29 @@ static void color_to_ansi(char *color, const char **elem) {
   }
 }
 
+void set_mode(char c) {
+  if (c == 'c') {
+    flags.mode = capacity;
+  } else if (c == 't') {
+    flags.mode = temperature;
+  } else if (c == 'p') {
+    flags.mode = power;
+  } else if (c == 'h') {
+    flags.mode = health;
+  }
+}
+void set_bat_number(char num) {
+  char buffer[50];
+  sprintf(buffer, "/sys/class/power_supply/BAT%c", num);
+  DIR *power_supply_dir = opendir(buffer);
+  if (power_supply_dir == NULL) {
+    printf("%s does not exist.", buffer);
+    exit(0);
+  }
+  strcpy(flags.bat_number, buffer);
+  closedir(power_supply_dir);
+}
+
 void parse_flags(int argc, char **argv) {
   static struct option long_options[] = {
       {"mode", required_argument, NULL, 'M'},
@@ -106,24 +129,10 @@ void parse_flags(int argc, char **argv) {
       toggle(flags.extra_colors);
       break;
     case 'M':
-      if (optarg[0] == 'c') {
-        flags.mode = capacity;
-      } else if (optarg[0] == 't') {
-        flags.mode = temperature;
-      } else if (optarg[0] == 'p') {
-        flags.mode = power;
-      } else if (optarg[0] == 'h') {
-        flags.mode = health;
-      }
+      set_mode(optarg[0]);
       break;
     case 'b': {
-      char buffer[50];
-      sprintf(buffer, "/sys/class/power_supply/BAT%s", optarg);
-      if (opendir(buffer) == NULL) {
-        printf("%s does not exist.", buffer);
-        exit(0);
-      }
-      strcpy(flags.bat_number, buffer);
+      set_bat_number(optarg[0]);
     } break;
     case 'h':
       print_help();
@@ -212,25 +221,9 @@ void parse_config(void) {
     } else if (eq(key, "extra_colors")) {
       flags.extra_colors = toggle_flag(val);
     } else if (eq(key, "mode")) {
-      if (val[0] == 'c') {
-        flags.mode = capacity;
-      } else if (val[0] == 't') {
-        flags.mode = temperature;
-      } else if (val[0] == 'p') {
-        flags.mode = power;
-      } else if (val[0] == 'h') {
-        flags.mode = health;
-      }
+      set_mode(val[0]);
     } else if (eq(key, "bat_number")) {
-      char buffer[50];
-      sprintf(buffer, "/sys/class/power_supply/BAT%c", val[0]);
-      DIR *power_supply_dir = opendir(buffer);
-      if (power_supply_dir == NULL) {
-        printf("%s does not exist.", buffer);
-        exit(0);
-      }
-      strcpy(flags.bat_number, buffer);
-      closedir(power_supply_dir);
+      set_bat_number(val[0]);
     }
   }
 

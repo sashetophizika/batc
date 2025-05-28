@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <pthread.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,6 +59,11 @@ static void setup(void) {
     struct dirent *bat_dirs;
     char bat_index = '9';
     DIR *power_supply_dir = opendir("/sys/class/power_supply");
+    if (power_supply_dir == NULL) {
+      printf("/sys/class/power_supply, directory not found.");
+      exit(1);
+    }
+
     while ((bat_dirs = readdir(power_supply_dir))) {
       if (bat_dirs->d_name[0] == 'B' && bat_dirs->d_name[3] < bat_index) {
         bat_index = bat_dirs->d_name[3];
@@ -68,7 +74,8 @@ static void setup(void) {
     snprintf(buffer, 50, "/sys/class/power_supply/BAT%c", bat_index);
     if (opendir(buffer) == NULL) {
       printf("No battery found.");
-      exit(0);
+      closedir(power_supply_dir);
+      exit(1);
     }
 
     strncpy(flags.bat_number, buffer, 50);
@@ -84,6 +91,8 @@ static void loop_sleep(void) {
 #endif
 }
 
+static void sig_exit(int legolas) { exit(0); }
+
 int main(int argc, char **argv) {
   parse_config();
   parse_flags(argc, argv);
@@ -93,6 +102,13 @@ int main(int argc, char **argv) {
     print_minimal(0);
     exit(0);
   }
+
+  struct sigaction sa;
+  sa.sa_handler = sig_exit;
+  sigemptyset(&sa.sa_mask);
+  sigaction(SIGINT, &sa, NULL);
+  sigaction(SIGKILL, &sa, NULL);
+  sigaction(SIGTERM, &sa, NULL);
 
   atexit(cleanup);
   setup();
@@ -145,4 +161,5 @@ int main(int argc, char **argv) {
       bat_status(flags.fetch);
     }
   }
+  return 0;
 }

@@ -33,91 +33,122 @@ static char *get_param(const char *param) {
   return line;
 }
 
-void bat_status(bool full) {
-  char *cap = get_param("capacity");
-  bat.capacity = atoi(cap);
-  free(cap);
+int get_capacity(void) {
+  char *cap_str = get_param("capacity");
+  int cap = atoi(cap_str);
+  free(cap_str);
+  return cap;
+}
 
-  if (bat.tech == NULL) {
-    bat.tech = get_param("technology");
+bool get_is_charging(void) {
+  bool is_charging = true;
+  char *status = get_param("status");
+
+  if (!strcmp(status, "Unknown\n") || !strcmp(status, "Discharging\n") ||
+      !strcmp(status, "Not charging\n")) {
+    is_charging = false;
   }
 
+  free(status);
+  return is_charging;
+}
+
+int get_temp(void) {
+  char *temp_str = get_param("temp");
+  int temp = atoi(temp_str) / 10.;
+  free(temp_str);
+  return temp;
+}
+
+int get_time(void) {
+  char *cn = get_param("charge_now");
+  char *cf = get_param("charge_full");
+  char *cu = get_param("current_now");
+
+  const int charge_now = atoi(cn);
+  const int charge_full = atoi(cf);
+  const int current_now = atoi(cu);
+
+  free(cn);
+  free(cf);
+  free(cu);
+
+  if (bat.is_charging == true) {
+    return (charge_full - charge_now) * 60 / (current_now + 1);
+  } else {
+    return charge_now * 60 / (current_now + 1);
+  }
+}
+
+float get_power(void) {
+  char *cu = get_param("current_now");
+  char *vu = get_param("voltage_now");
+
+  const int current_now = atoi(cu);
+  const int voltage_now = atoi(vu);
+
+  free(cu);
+  free(vu);
+
+  return (current_now * 1.0 * voltage_now) / 1000000000000;
+}
+
+float get_health(void) {
+  char *cf = get_param("charge_full");
+  char *cd = get_param("charge_full_design");
+
+  const int charge_full = atoi(cf);
+  const int charge_full_design = atoi(cd);
+
+  free(cf);
+  free(cd);
+
+  return 100.0 * charge_full / (charge_full_design + 1);
+}
+
+float get_charge(void) {
+  char *cf = get_param("charge_full");
+  char *vm = get_param("voltage_min_design");
+  const long charge_full = atoi(cf);
+  const long voltage_min = atoi(vm);
+
+  free(cf);
+  free(vm);
+
+  float charge = charge_full * voltage_min / 100000000000.0;
+  return charge / 10.0;
+}
+
+void bat_status(bool full) {
+  bat.capacity = get_capacity();
   if (bat.capacity > 100 || bat.capacity < 0) {
-    printf("Erorr: Battery reporting invalid capacity levels");
+    printf("Erorr: Battery reporting invalid capacity level: %d", bat.capacity);
     exit(0);
   }
 
-  char *status = get_param("status");
-  if (!strcmp(status, "Unknown\n") || !strcmp(status, "Discharging\n") ||
-      !strcmp(status, "Not charging\n")) {
-    bat.is_charging = false;
-  } else {
-    bat.is_charging = true;
-  }
-  free(status);
+  bat.is_charging = get_is_charging();
 
   if (flags.mode == temperature || full) {
-    char *temp = get_param("temp");
-    bat.temp = atoi(temp) / 10.;
-    free(temp);
+    bat.temp = get_temp();
   }
 
   if (flags.mode == time_m || full) {
-    char *cn = get_param("charge_now");
-    char *cf = get_param("charge_full");
-    char *cu = get_param("current_now");
-
-    const int charge_now = atoi(cn);
-    const int charge_full = atoi(cf);
-    const int current_now = atoi(cu);
-
-    free(cn);
-    free(cf);
-    free(cu);
-
-    if (bat.is_charging == true) {
-      bat.time = (charge_full - charge_now) * 60 / (current_now + 1);
-    } else {
-      bat.time = charge_now * 60 / (current_now + 1);
-    }
+    bat.time = get_time();
   }
 
   if (flags.mode == power || full) {
-    char *cu = get_param("current_now");
-    char *vu = get_param("voltage_now");
-
-    const int current_now = atoi(cu);
-    const int voltage_now = atoi(vu);
-
-    free(cu);
-    free(vu);
-
-    bat.power = (current_now * 1.0 * voltage_now) / 1000000000000;
+    bat.power = get_power();
   }
 
   if (flags.mode == health || full) {
-    char *cf = get_param("charge_full");
-    char *cd = get_param("charge_full_design");
-
-    const int charge_full = atoi(cf);
-    const int charge_full_design = atoi(cd);
-
-    free(cf);
-    free(cd);
-
-    bat.health = 100.0 * charge_full / (charge_full_design + 1);
+    bat.health = get_health();
   }
 
   if (flags.mode == charge || full) {
-    char *cf = get_param("charge_full");
-    char *vm = get_param("voltage_min_design");
-    const long charge_full = atoi(cf);
-    const long voltage_min = atoi(vm);
+    bat.charge = get_charge();
+  }
 
-    free(cf);
-    free(vm);
-
-    float charge = charge_full * voltage_min / 100000000000.0;
-    bat.charge = charge / 10.0;
+  if (bat.tech == NULL) {
+    bat.tech = get_param("technology");
   }
 }
