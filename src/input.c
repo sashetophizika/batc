@@ -42,8 +42,8 @@ static int handle_input(char c) {
     break;
   case 'p':
     if (flags.mode == power) {
-      flags.mode = time_m;
-    } else if (flags.mode == time_m) {
+      flags.mode = times;
+    } else if (flags.mode == times) {
       flags.mode = power;
     } else if (flags.mode == health) {
       flags.mode = charge;
@@ -56,12 +56,12 @@ static int handle_input(char c) {
     break;
   case 'm':
     if (flags.mode == capacity) {
-      flags.mode = temperature;
-    } else if (flags.mode == temperature) {
+      flags.mode = temp;
+    } else if (flags.mode == temp) {
       flags.mode = power;
-    } else if (flags.mode == power || flags.mode == time_m) {
+    } else if (flags.mode == power || flags.mode == times) {
       flags.mode = health;
-    } else if (flags.mode == health) {
+    } else if (flags.mode == health || flags.mode == charge) {
       flags.mode = capacity;
     }
     instant_update();
@@ -71,7 +71,7 @@ static int handle_input(char c) {
     instant_update();
     break;
   case '2':
-    flags.mode = temperature;
+    flags.mode = temp;
     instant_update();
     break;
   case '3':
@@ -83,7 +83,7 @@ static int handle_input(char c) {
     instant_update();
     break;
   case '5':
-    flags.mode = time_m;
+    flags.mode = times;
     instant_update();
     break;
 

@@ -8,12 +8,17 @@
 #include "print.h"
 #include "state.h"
 
+#define BAT_HEIGHT 6
+#define BAT_WIDTH 42
 #define MAX_BLOCKS_BIG 33
 #define MAX_BLOCKS_SMALL 14
 #define FETCHCOL_BIG 63
 #define FETCHCOL_SMALL 31
 #define CHARGE_SIZE_BIG 13
 #define CHARGE_SIZE_SMALL 6
+
+#define min(a, b) a < b ? b : a
+#define max(a, b) a > b ? b : a
 
 static char *bat_name(char *batfile) {
   char *tempstr = calloc(strlen(batfile) + 1, sizeof(char));
@@ -99,17 +104,14 @@ static int get_bitstring(int digit) {
   }
 }
 
-static void print_digit(int digit, int row, int col) {
-  int bitstring = get_bitstring(digit);
-  int negate = 0;
+static void print_digit(int digit, int col) {
+  const int bitstring = get_bitstring(digit);
 
-  const char *digit_color = colors.number;
-  if (colors.number == NULL || !flags.digits) {
-    negate = bat.capacity / 3 + state.start_col + 3 - col;
-    digit_color = state.inner_color;
-  }
+  bool set = colors.number && flags.digits;
+  const int negate = set ? 0 : bat.capacity / 3 + state.start_col + 3 - col;
+  const char *const digit_color = set ? colors.number : state.inner_color;
 
-  printf("\033[%d;%dH%s", row, col, digit_color);
+  printf("\033[%d;%dH%s", state.start_row + 2, col, digit_color);
   for (int i = 0; i < 30; i++) {
     if ((i % 6 < negate) != (bitstring >> i & 1)) {
       printf("█");
@@ -123,8 +125,6 @@ static void print_digit(int digit, int row, int col) {
       printf("\033[1B\033[6D");
     }
   }
-
-  printf("\033[%d;0H", row + flags.fat + 3);
 }
 
 static int count_digits(int num) {
@@ -137,16 +137,16 @@ static int count_digits(int num) {
   return count;
 }
 
-static int get_data(Mode mode) {
+static int get_data(const Mode mode) {
   switch (mode) {
   case capacity:
     return bat.capacity;
-  case temperature:
+  case temp:
     return bat.temp;
   case power:
     return bat.power;
-  case time_m:
-    return bat.time;
+  case times:
+    return bat.times;
   case health:
     return bat.health;
   case charge:
@@ -154,14 +154,13 @@ static int get_data(Mode mode) {
   }
 }
 
-static void print_number(int row) {
+static void print_number(void) {
   int data = get_data(flags.mode);
-  int digits = count_digits(data);
-  digits = digits > 4 ? 4 : digits;
+  const int digits = max(count_digits(data), 4);
 
-  int col = state.start_col + 4 * digits + 12;
+  const int col = state.start_col + 4 * digits + 12;
   for (int i = 0; i < digits; i++) {
-    print_digit(flags.digits ? data % 10 : 42, row, col - 8 * i);
+    print_digit(flags.digits ? data % 10 : 42, col - 8 * i);
     data /= 10;
   }
 }
@@ -245,26 +244,16 @@ void print_charge(void) {
 
 static void print_col(int blocks, int core_rows) {
   static int prev_blocks = 0;
+  const int diff = blocks - prev_blocks;
 
-  if (blocks == prev_blocks) {
+  if (!diff) {
     return;
   }
 
-  const int diff = blocks - prev_blocks;
-  const char *new_sym;
-  int step, start, end;
-
-  if (diff > 0) {
-    step = 1;
-    start = 1;
-    end = diff + 1;
-    new_sym = "█";
-  } else {
-    step = -1;
-    start = 0;
-    end = diff;
-    new_sym = " ";
-  }
+  const char *new_sym = diff > 0 ? "█" : " ";
+  const int step = diff / abs(diff);
+  const int start = diff > 0;
+  const int end = diff + (diff > 0);
 
   int col = 0;
   for (int i = start; step * i < step * end; i += step) {
@@ -299,8 +288,8 @@ static void print_shell(int core_rows) {
 }
 
 static void print_core(int blocks, int core_rows) {
-  const char *block_string = "█████████████████████████████████████\0";
-  const char *empty_string = "                                     \0";
+  const char *const block_string = "█████████████████████████████████████\0";
+  const char *const empty_string = "                                     \0";
   char fill_blocks[150], empty_blocks[50];
 
   strncpy(fill_blocks, block_string, (blocks + 1) * 3);
@@ -353,11 +342,12 @@ static void define_position(void) {
   state.term_cols = w.ws_col;
 
   if (flags.inlin || flags.fetch) {
-    const int min_rows = 10 + flags.fat;
     char *pos = get_cursor_position();
-
     state.start_row = atoi(pos) + 1;
+    free(pos);
+
     state.start_col = 3;
+    const int min_rows = 10 + flags.fat;
 
     if (state.term_rows - state.start_row < min_rows) {
       state.start_row = state.term_rows - min_rows + 1;
@@ -367,11 +357,10 @@ static void define_position(void) {
       }
     }
 
-    free(pos);
   } else {
     printf("\033[2J");
-    state.start_row = state.term_rows / 2 - 3;
-    state.start_col = state.term_cols / 2 - 21;
+    state.start_row = (state.term_rows - BAT_HEIGHT) / 2;
+    state.start_col = (state.term_cols - BAT_WIDTH) / 2;
   }
 }
 
@@ -395,7 +384,7 @@ static void update_color(Mode mode) {
   case capacity:
     state.inner_color = get_default_color();
     return;
-  case time_m:
+  case times:
   case power:
     state.inner_color = bat.is_charging ? colors.full : colors.left;
     return;
@@ -403,7 +392,7 @@ static void update_color(Mode mode) {
   case charge:
     state.inner_color = colors.health;
     return;
-  case temperature:
+  case temp:
     state.inner_color = colors.temp;
     return;
   }
@@ -436,9 +425,9 @@ static void print_fetch(void) {
 
   int col = 0;
   if (flags.small) {
-    col = FETCHCOL_SMALL - (bat.is_charging ? 0 : CHARGE_SIZE_SMALL);
+    col = FETCHCOL_SMALL - (!bat.is_charging * CHARGE_SIZE_SMALL);
   } else {
-    col = FETCHCOL_BIG - (bat.is_charging ? 0 + !flags.fat : CHARGE_SIZE_BIG);
+    col = FETCHCOL_BIG - (bat.is_charging ? !flags.fat : CHARGE_SIZE_BIG);
     printf("\033[%d;0H", state.start_row + flags.fetch - 1);
   }
 
@@ -456,7 +445,7 @@ static void print_big(bool redefine) {
   print_bat();
   print_charge();
   print_tech();
-  print_number(state.start_row + 2);
+  print_number();
 
   if (flags.inlin || flags.fetch) {
     printf("\033[%d;0H", state.start_row + 2 * flags.fetch + flags.fat - 1);
@@ -465,7 +454,7 @@ static void print_big(bool redefine) {
   printf("\r\n");
 }
 
-static void print_small_bat_row(bool top) {
+static void print_small_row(bool cap) {
   const int blocks = bat.capacity / 7;
   printf("  %s██%s", colors.shell, state.inner_color);
   for (int i = 0; i < MAX_BLOCKS_SMALL; i++) {
@@ -479,48 +468,42 @@ static void print_small_bat_row(bool top) {
 
   if (!bat.is_charging) {
     printf("%s\r\n", flags.fetch ? "   " : "               ");
-  } else if (top) {
+  } else if (cap) {
     printf("   %s▄▄▄\r\n", colors.charge);
   } else {
     printf("  %s▀▀▀\r\n", colors.charge);
   }
 }
 
+#define print_shell printf("  %s██████████████████\r\n", colors.shell)
+
 static void print_small_bat(void) {
-  printf("\n  %s██████████████████\r\n", colors.shell);
-  print_small_bat_row(true);
-  print_small_bat_row(false);
-  printf("  %s██████████████████\n", colors.shell);
+  printf("\r\n");
+  print_shell;
+  print_small_row(true);
+  print_small_row(false);
+  print_shell;
+  printf("\r\033[5F");
 }
 
 static void print_small(void) {
   update_state();
   print_fetch();
   print_small_bat();
-  printf("\r\033[5F");
 }
 
 #define print_key(k)                                                           \
-  printf("%s%.*s%.*s\r\n", color_pad, max_len, k,                              \
-         max_len - (int)strlen(k) + 4, "\033[0m:");
+  printf("\033[%dC%s%.*s%.*s\r\n", col, key_color, max_len, k,                 \
+         col ? min(max_len - (int)strlen(k), 0) : 1000, "\033[0m:");
 
 static void print_keys(int col) {
-  int max_len;
-  if (state.term_cols) {
-    max_len = state.term_cols < col ? 0 : state.term_cols - col;
-  } else {
-    max_len = 1000;
-  }
-
-  char color_pad[50];
+  const int max_len = state.term_cols ? min(state.term_cols - col, 0) : 20;
   const char *key_color = col ? state.inner_color : "\033[0m";
-  snprintf(color_pad, 50, "\033[%dC%s", col, key_color);
 
   char *bat_num = bat_name(flags.bat_number);
-  printf("%s%s\033[1m%.*s\033[22m\033[0m\r\n", color_pad, colors.charge,
+  printf("\033[%dC%s\033[1m%.*s\033[22m\033[0m\r\n", col, colors.charge,
          max_len, bat_num);
   free(bat_num);
-
   print_key("Battery");
   print_key("Health");
   print_key("Max Charge");
@@ -539,7 +522,7 @@ static void print_keys(int col) {
 
 static char *repeat(char c, int n) {
   char *s = calloc(n, sizeof(char));
-  int max = n > 13 ? 13 : n;
+  const int max = max(n, 13);
   for (int i = 0; i < max; i++) {
     s[i] = c;
   }
@@ -548,21 +531,11 @@ static char *repeat(char c, int n) {
 
 #define print_val(format, ...)                                                 \
   snprintf(val_str, 10, format, __VA_ARGS__);                                  \
-  printf("\033[%dC%s%.*s\r\n", col, sweep, max_len, val_str);
+  printf("\033[%dC%s\033[%dD%.*s\r\n", col, clean, max_len, max_len, val_str);
 
 static void print_vals(int col) {
-  int max_len;
-  if (state.term_cols) {
-    max_len = state.term_cols < col ? 0 : state.term_cols - col;
-  } else {
-    max_len = 1000;
-  }
-
-  char sweep[30];
-  memset(sweep, 0, 30);
+  const int max_len = state.term_cols ? min(state.term_cols - col, 0) : 13;
   char *clean = repeat(' ', max_len);
-  snprintf(sweep, 30, "%s\033[%dD", clean, max_len > 13 ? 13 : max_len);
-  free(clean);
 
   printf("\033[0m\r\n");
   char val_str[10];
@@ -574,7 +547,9 @@ static void print_vals(int col) {
   print_val("%s", bat.tech);
   print_val("%s", bat.is_charging ? "True" : "False");
   print_val("%.1fW", bat.power);
-  print_val("%dH %dM", bat.time / 60, bat.time % 60);
+  print_val("%dH %dM", bat.times / 60, bat.times % 60);
+
+  free(clean);
 }
 
 void print_minimal(int col) {

@@ -10,65 +10,67 @@
 
 #define eq(s1, s2) strcmp(s1, s2) == 0
 #define hex(s) strtol(s, NULL, 16)
-#define toggle_flag(val) eq(val, "true\n") ? true : false;
+#define set_rgb(c, o)                                                          \
+  strncpy(c, color + o, 2);                                                    \
+  c[2] = 0
+
+#define str(s) #s
+#define set_color(word, ansi)                                                  \
+  if (eq(color, str(word) "\n")) {                                             \
+    *elem = "\033[0;" str(ansi) "m\0";                                         \
+    return;                                                                    \
+  }
 
 static void color_to_ansi(char *color, const char **elem) {
-  if (eq(color, "none\n")) {
-    *elem = "\033[0m\0";
-  } else if (eq(color, "black\n")) {
-    *elem = "\033[0;30m\0";
-  } else if (eq(color, "red\n")) {
-    *elem = "\033[0;31m\0";
-  } else if (eq(color, "green\n")) {
-    *elem = "\033[0;32m\0";
-  } else if (eq(color, "yellow\n")) {
-    *elem = "\033[0;33m\0";
-  } else if (eq(color, "blue\n")) {
-    *elem = "\033[0;34m\0";
-  } else if (eq(color, "magenta\n")) {
-    *elem = "\033[0;35m\0";
-  } else if (eq(color, "cyan\n")) {
-    *elem = "\033[0;36m\0";
-  } else if (eq(color, "white\n")) {
-    *elem = "\033[0;37m\0";
-  } else if (color[0] == '#') {
+  set_color("none", "0");
+  set_color("black", "30");
+  set_color("red", "31");
+  set_color("green", "32");
+  set_color("yellow", "33");
+  set_color("blue", "34");
+  set_color("magenta", "35");
+  set_color("cyan", "36");
+  set_color("white", "37");
+
+  if (color[0] == '#') {
     char r[3], g[3], b[3];
 
-    strncpy(r, color + 1, 2);
-    r[2] = '\0';
-    strncpy(g, color + 3, 2);
-    g[2] = '\0';
-    strncpy(b, color + 5, 2);
-    b[2] = '\0';
+    set_rgb(r, 1);
+    set_rgb(g, 3);
+    set_rgb(b, 5);
 
     char *ansi_color = malloc(100);
     snprintf(ansi_color, 100, "\033[38;2;%ld;%ld;%ldm", hex(r), hex(g), hex(b));
     *elem = ansi_color;
-  } else if (eq(color, "NULL\n")) {
-    *elem = NULL;
-  } else {
-    *elem = "\033[0m";
+    return;
   }
+
+  if (eq(color, "NULL\n")) {
+    *elem = NULL;
+    return;
+  }
+  *elem = "\033[0m";
 }
 
+#define set_to(m)                                                              \
+  if (c == #m[0])                                                              \
+    flags.mode = m;                                                            \
+  return
+
 void set_mode(char c) {
-  if (c == 'c') {
-    flags.mode = capacity;
-  } else if (c == 't') {
-    flags.mode = temperature;
-  } else if (c == 'p') {
-    flags.mode = power;
-  } else if (c == 'h') {
-    flags.mode = health;
-  }
+  set_to(capacity);
+  set_to(temp);
+  set_to(power);
+  set_to(health);
 }
+
 void set_bat_number(char num) {
   char buffer[50];
   sprintf(buffer, "/sys/class/power_supply/BAT%c", num);
   DIR *power_supply_dir = opendir(buffer);
   if (power_supply_dir == NULL) {
     printf("%s does not exist.\n", buffer);
-    exit(0);
+    exit(1);
   }
   strcpy(flags.bat_number, buffer);
   closedir(power_supply_dir);
@@ -141,36 +143,55 @@ void parse_flags(int argc, char **argv) {
   }
 }
 
-void parse_config(void) {
-  char file_name[100];
+FILE *get_config(void) {
   const char *home = getenv("HOME");
-  if (home == NULL) {
-    return;
+  if (!home) {
+    return NULL;
   }
 
-  snprintf(file_name, 100, "%s/.config/batc/batc.conf", home);
-  if (access(file_name, F_OK)) {
-    snprintf(file_name, 100, "%s/.config/batc/config", home);
-    if (access(file_name, F_OK)) {
-      return;
+  char config_file[100];
+  snprintf(config_file, 100, "%s/.config/batc/batc.conf", home);
+  if (access(config_file, F_OK)) {
+    snprintf(config_file, 100, "%s/.config/batc/config", home);
+    if (access(config_file, F_OK)) {
+      return NULL;
     }
   }
+  return fopen(config_file, "r");
+}
 
-  FILE *config_file = fopen(file_name, "r");
-  char *line = NULL;
-  size_t len = 0;
+#define parse_color(c)                                                         \
+  if (eq(key, "color_##c")) {                                                  \
+    color_to_ansi(val, &colors.c);                                             \
+    continue;                                                                  \
+  }
 
-  if (config_file == NULL) {
+#define parse_flag(f)                                                          \
+  if (eq(key, #f)) {                                                           \
+    flags.f = eq(val, "true\n") ? true : false;                                \
+    continue;                                                                  \
+  }
+
+#define parse_flag_arg(f)                                                      \
+  if (eq(key, #f)) {                                                           \
+    set_##f(val[0]);                                                           \
+    continue;                                                                  \
+  }
+
+void parse_config(void) {
+  FILE *const config = get_config();
+  if (!config) {
     return;
   }
 
-  char *key, *val;
+  size_t len = 0;
+  char *line, *key, *val = NULL;
 
-  while (getline(&line, &len, config_file) != -1) {
+  while (getline(&line, &len, config) != -1) {
     key = strtok(line, " =");
     val = strtok(NULL, " =");
 
-    if (key == NULL || val == NULL) {
+    if (!key || !val) {
       continue;
     }
 
@@ -178,56 +199,34 @@ void parse_config(void) {
       continue;
     }
 
-    if (eq(key, "color_high")) {
-      color_to_ansi(val, &colors.high);
-    } else if (eq(key, "color_mid")) {
-      color_to_ansi(val, &colors.mid);
-    } else if (eq(key, "color_low")) {
-      color_to_ansi(val, &colors.low);
-    } else if (eq(key, "color_charge")) {
-      color_to_ansi(val, &colors.charge);
-    } else if (eq(key, "color_tech")) {
-      color_to_ansi(val, &colors.tech);
-    } else if (eq(key, "color_shell")) {
-      color_to_ansi(val, &colors.shell);
-    } else if (eq(key, "color_temp")) {
-      color_to_ansi(val, &colors.temp);
-    } else if (eq(key, "color_health")) {
-      color_to_ansi(val, &colors.health);
-    } else if (eq(key, "color_full")) {
-      color_to_ansi(val, &colors.full);
-    } else if (eq(key, "color_left")) {
-      color_to_ansi(val, &colors.left);
-    } else if (eq(key, "color_number")) {
-      color_to_ansi(val, &colors.number);
-    } else if (eq(key, "colors")) {
-      flags.colors = toggle_flag(val);
-    } else if (eq(key, "live")) {
-      flags.live = toggle_flag(val);
-    } else if (eq(key, "digits")) {
-      flags.digits = toggle_flag(val);
-    } else if (eq(key, "fat")) {
-      flags.fat = toggle_flag(val);
-    } else if (eq(key, "fetch")) {
-      flags.fetch = toggle_flag(val);
-    } else if (eq(key, "small")) {
-      flags.small = toggle_flag(val);
-    } else if (eq(key, "inline")) {
-      flags.inlin = toggle_flag(val);
-    } else if (eq(key, "minimal")) {
-      flags.minimal = toggle_flag(val);
-    } else if (eq(key, "alt_charge")) {
-      flags.alt_charge = toggle_flag(val);
-    } else if (eq(key, "extra_colors")) {
-      flags.extra_colors = toggle_flag(val);
-    } else if (eq(key, "mode")) {
-      set_mode(val[0]);
-    } else if (eq(key, "bat_number")) {
-      set_bat_number(val[0]);
-    }
+    parse_color(high);
+    parse_color(mid);
+    parse_color(low);
+    parse_color(temp);
+    parse_color(health);
+    parse_color(full);
+    parse_color(left);
+    parse_color(tech);
+    parse_color(shell);
+    parse_color(charge);
+    parse_color(number);
+
+    parse_flag(colors);
+    parse_flag(live);
+    parse_flag(digits);
+    parse_flag(fat);
+    parse_flag(fetch);
+    parse_flag(small);
+    parse_flag(inlin);
+    parse_flag(minimal);
+    parse_flag(alt_charge);
+    parse_flag(extra_colors);
+
+    parse_flag_arg(mode);
+    parse_flag_arg(bat_number);
   }
 
-  fclose(config_file);
+  fclose(config);
   if (line) {
     free(line);
   }

@@ -9,8 +9,8 @@
 typedef enum Mode {
   capacity,
   power,
-  temperature,
-  time_m,
+  temp,
+  times,
   health,
   charge,
 } Mode;
@@ -18,7 +18,7 @@ typedef enum Mode {
 typedef struct Battery {
   int capacity;
   int temp;
-  int time;
+  int times;
   float power;
   float health;
   float charge;

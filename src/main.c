@@ -105,6 +105,7 @@ int main(int argc, char **argv) {
 
   struct sigaction sa;
   sa.sa_handler = sig_exit;
+  sa.sa_flags = SA_RESTART;
   sigemptyset(&sa.sa_mask);
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGKILL, &sa, NULL);
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
   bat_status(flags.fetch);
   print_battery(true);
 
-  struct winsize w;
+  const struct winsize w;
   Battery prev_bat = bat;
 
   if (flags.live) {
@@ -131,7 +132,7 @@ int main(int argc, char **argv) {
       }
 
       if (!flags.small || flags.digits) {
-        if (flags.mode == temperature && prev_bat.temp != bat.temp) {
+        if (flags.mode == temp && prev_bat.temp != bat.temp) {
           should_print = true;
         } else if (flags.mode == power && prev_bat.power != bat.power) {
           should_print = true;
