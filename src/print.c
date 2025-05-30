@@ -504,6 +504,7 @@ static void print_keys(int col) {
   printf("\033[%dC%s\033[1m%.*s\033[22m\033[0m\r\n", col, colors.charge,
          max_len, bat_num);
   free(bat_num);
+
   print_key("Battery");
   print_key("Health");
   print_key("Max Charge");
@@ -522,8 +523,7 @@ static void print_keys(int col) {
 
 static char *repeat(char c, int n) {
   char *s = calloc(n, sizeof(char));
-  const int max = max(n, 13);
-  for (int i = 0; i < max; i++) {
+  for (int i = 0; i < n; i++) {
     s[i] = c;
   }
   return s;
