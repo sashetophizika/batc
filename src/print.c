@@ -514,6 +514,7 @@ static void print_keys(int col) {
 
   char color_pad[50];
   const char *key_color = col ? state.inner_color : "\033[0m";
+  snprintf(color_pad, 50, "\033[%dC%s", col, key_color);
 
   char *bat_num = bat_name(flags.bat_number);
   printf("%s%s\033[1m%.*s\033[22m\033[0m\r\n", color_pad, colors.charge,
