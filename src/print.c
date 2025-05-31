@@ -17,8 +17,7 @@
 #define CHARGE_SIZE_BIG 13
 #define CHARGE_SIZE_SMALL 6
 
-#define min(a, b) a < b ? b : a
-#define max(a, b) a > b ? b : a
+inline static int max(int a, int b) { return a > b ? a : b; }
 
 static char *bat_name(char *batfile) {
   char *tempstr = calloc(strlen(batfile) + 1, sizeof(char));
@@ -494,10 +493,10 @@ static void print_small(void) {
 
 #define print_key(k)                                                           \
   printf("\033[%dC%s%.*s%.*s\r\n", col, key_color, max_len, k,                 \
-         col ? min(max_len - (int)strlen(k), 0) : 1000, "\033[0m:");
+         col ? max(max_len - (int)strlen(k), 0) : 1000, "\033[0m:");
 
 static void print_keys(int col) {
-  const int max_len = state.term_cols ? min(state.term_cols - col, 0) : 20;
+  const int max_len = state.term_cols ? max(state.term_cols - col, 0) : 20;
   const char *key_color = col ? state.inner_color : "\033[0m";
 
   char *bat_num = bat_name(flags.bat_number);
@@ -534,7 +533,7 @@ static char *repeat(char c, int n) {
   printf("\033[%dC%s\033[%dD%.*s\r\n", col, clean, max_len, max_len, val_str);
 
 static void print_vals(int col) {
-  const int max_len = state.term_cols ? min(state.term_cols - col, 0) : 13;
+  const int max_len = state.term_cols ? max(state.term_cols - col, 0) : 13;
   char *clean = repeat(' ', max_len);
 
   printf("\033[0m\r\n");

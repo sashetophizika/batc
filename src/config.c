@@ -161,7 +161,7 @@ FILE *get_config(void) {
 }
 
 #define parse_color(c)                                                         \
-  if (eq(key, "color_##c")) {                                                  \
+  if (eq(key, "color_" str(c))) {                                              \
     color_to_ansi(val, &colors.c);                                             \
     continue;                                                                  \
   }
