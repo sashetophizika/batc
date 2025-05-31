@@ -8,7 +8,7 @@ batc:
 	{{cc}} src/*.c {{cflags}} -o release/batc
 
 debug:
-	@[ -d release ] || mkdir release
+	@[ -d debug ] || mkdir debug
 	{{cc}} src/*.c {{cflags}} -o debug/batc -DDEBUG 
 
 run: batc
@@ -21,3 +21,7 @@ install:
 
 uninstall:
 	@rm {{destdir}}/batc
+
+clean:
+	@rm -rf release debug
+
