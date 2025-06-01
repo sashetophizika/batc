@@ -18,6 +18,7 @@
 #define CHARGE_SIZE_SMALL 6
 
 inline static int max(int a, int b) { return a > b ? a : b; }
+inline static int min(int a, int b) { return a < b ? a : b; }
 
 static char *bat_name(char *batfile) {
   char *tempstr = calloc(strlen(batfile) + 1, sizeof(char));
@@ -155,7 +156,7 @@ static int get_data(const Mode mode) {
 
 static void print_number(void) {
   int data = get_data(flags.mode);
-  const int digits = max(count_digits(data), 4);
+  const int digits = min(count_digits(data), 4);
 
   const int col = state.start_col + 4 * digits + 12;
   for (int i = 0; i < digits; i++) {
