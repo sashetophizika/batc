@@ -66,6 +66,18 @@ static int handle_input(char c) {
     }
     instant_update();
     break;
+  case 'M':
+    if (flags.mode == capacity) {
+      flags.mode = health;
+    } else if (flags.mode == temp) {
+      flags.mode = capacity;
+    } else if (flags.mode == power || flags.mode == times) {
+      flags.mode = temp;
+    } else if (flags.mode == health || flags.mode == charge) {
+      flags.mode = power;
+    }
+    instant_update();
+    break;
   case '1':
     flags.mode = capacity;
     instant_update();
