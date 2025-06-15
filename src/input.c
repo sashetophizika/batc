@@ -98,6 +98,10 @@ static int handle_input(char c) {
     flags.mode = times;
     instant_update();
     break;
+  case '6':
+    flags.mode = charge;
+    instant_update();
+    break;
 
 #ifdef DEBUG
   case 'a': {

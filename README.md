@@ -59,6 +59,7 @@ In live mode you can use some keybinds.
 * **3**: power mode
 * **4**: health mode
 * **5**: time mode
+* **6**: charge mode
 
 ## Configuration
 
