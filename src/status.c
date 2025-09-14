@@ -6,6 +6,8 @@
 #include "state.h"
 #include "status.h"
 
+inline static int min(int a, int b) { return a < b ? a : b; }
+
 static char *get_param(const char *param) {
   char *line = NULL;
   size_t len = 0;
@@ -35,11 +37,7 @@ static char *get_param(const char *param) {
 
 int get_capacity(void) {
   char *const cap_str = get_param("capacity");
-  const int cap = atoi(cap_str);
-  if (bat.capacity > 100 || bat.capacity < 0) {
-    printf("Erorr: Battery reporting invalid capacity level: %d", bat.capacity);
-    exit(1);
-  }
+  const int cap = min(100, atoi(cap_str));
 
   free(cap_str);
   return cap;
