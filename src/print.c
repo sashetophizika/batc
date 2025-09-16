@@ -492,8 +492,15 @@ static void print_small(void) {
   print_small_bat();
 }
 
+static void print_padding(int col) {
+  if (col) {
+    printf("\033[%dC", col);
+  }
+}
+
 #define print_key(k)                                                           \
-  printf("\033[%dC%s%.*s%.*s\r\n", col, key_color, max_len, k,                 \
+  print_padding(col);                                                          \
+  printf("%s%.*s%.*s\r\n", key_color, max_len, k,                              \
          col ? max(max_len - (int)strlen(k), 0) : 1000, "\033[0m:");
 
 static void print_keys(int col) {
@@ -501,8 +508,8 @@ static void print_keys(int col) {
   const char *key_color = col ? state.inner_color : "\033[0m";
 
   char *bat_num = bat_name(flags.bat_number);
-  printf("\033[%dC%s\033[1m%.*s\033[22m\033[0m\r\n", col, colors.charge,
-         max_len, bat_num);
+  print_padding(col);
+  printf("%s\033[1m%.*s\033[22m\033[0m\r\n", colors.charge, max_len, bat_num);
   free(bat_num);
 
   print_key("Battery");
@@ -570,7 +577,7 @@ void print_minimal(int col) {
   }
 
   prev_padding = col;
-  print_vals(col + 16);
+  print_vals(col + 15);
 }
 
 void print_battery(bool redefine) {
