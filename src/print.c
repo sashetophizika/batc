@@ -8,15 +8,6 @@
 #include "print.h"
 #include "state.h"
 
-#define BAT_HEIGHT 6
-#define BAT_WIDTH 42
-#define MAX_BLOCKS_BIG 33
-#define MAX_BLOCKS_SMALL 14
-#define FETCHCOL_BIG 63
-#define FETCHCOL_SMALL 31
-#define CHARGE_SIZE_BIG 13
-#define CHARGE_SIZE_SMALL 6
-
 inline static int max(int a, int b) { return a > b ? a : b; }
 inline static int min(int a, int b) { return a < b ? a : b; }
 
@@ -316,54 +307,6 @@ static void print_bat(void) {
   }
 }
 
-static char *get_cursor_position(void) {
-  char *buf = calloc(3, sizeof(char));
-  int i = 0;
-  char c = '\0';
-
-  write(STDOUT_FILENO, "\033[6n", 4);
-  for (c = 0; c != 'R'; read(STDIN_FILENO, &c, 1)) {
-    if (c >= '0' && c <= '9' && i < 3) {
-      buf[i] = c;
-      i++;
-    } else if (c == ';') {
-      i = 99;
-    }
-  }
-
-  return buf;
-}
-
-static void define_position(void) {
-  struct winsize w;
-  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-
-  state.term_rows = w.ws_row;
-  state.term_cols = w.ws_col;
-
-  if (flags.inlin || flags.fetch) {
-    char *pos = get_cursor_position();
-    state.start_row = atoi(pos) + 1;
-    free(pos);
-
-    state.start_col = 3;
-    const int min_rows = 10 + flags.fat;
-
-    if (state.term_rows - state.start_row < min_rows) {
-      state.start_row = state.term_rows - min_rows + 1;
-
-      for (int j = 0; j < min_rows; j++) {
-        printf("\r\n");
-      }
-    }
-
-  } else {
-    printf("\033[2J");
-    state.start_row = (state.term_rows - BAT_HEIGHT) / 2;
-    state.start_col = (state.term_cols - BAT_WIDTH) / 2;
-  }
-}
-
 static const char *get_default_color(void) {
   if (bat.capacity < 20) {
     return colors.low;
@@ -435,11 +378,7 @@ static void print_fetch(void) {
   printf("\r\033[%dF", 8 + flags.small);
 }
 
-static void print_big(bool redefine) {
-  if (redefine == true) {
-    define_position();
-  }
-
+static void print_big(void) {
   update_state();
   print_fetch();
   print_bat();
@@ -580,9 +519,7 @@ void print_minimal(int col) {
   print_vals(col + 15);
 }
 
-void print_battery(bool redefine) {
-  flags.small ? print_small() : print_big(redefine);
-}
+void print_battery(void) { flags.small ? print_small() : print_big(); }
 
 void print_help(void) {
   puts("Usage:\r\n"

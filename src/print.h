@@ -5,6 +5,6 @@ void print_charge(void);
 
 void print_minimal(int padding);
 
-void print_battery(bool redefine);
+void print_battery(void);
 
 void print_help(void);

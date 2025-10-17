@@ -12,23 +12,23 @@
 static void instant_update(void) {
   state.redraw = true;
   bat_status(false);
-  print_battery(false);
+  print_battery();
 }
 
 static int handle_input(char c) {
   switch (c) {
   case 'd':
     toggle(flags.digits);
-    print_battery(false);
+    print_battery();
     break;
   case 't':
     toggle(flags.tech);
-    print_battery(false);
+    print_battery();
     break;
   case 'f':
     toggle(flags.fat);
     state.redraw = true;
-    print_battery(false);
+    print_battery();
     break;
   case 'c':
     toggle(flags.alt_charge);
@@ -38,7 +38,7 @@ static int handle_input(char c) {
     break;
   case 'e':
     toggle(flags.extra_colors);
-    print_battery(false);
+    print_battery();
     break;
   case 'p':
     if (flags.mode == power) {
@@ -52,7 +52,7 @@ static int handle_input(char c) {
     }
 
     bat_status(false);
-    print_battery(false);
+    print_battery();
     break;
   case 'm':
     if (flags.mode == capacity) {

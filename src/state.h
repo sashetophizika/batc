@@ -6,6 +6,15 @@
     x = x ? false : true;                                                      \
   }
 
+#define BAT_HEIGHT 6
+#define BAT_WIDTH 42
+#define MAX_BLOCKS_BIG 33
+#define MAX_BLOCKS_SMALL 14
+#define FETCHCOL_BIG 63
+#define FETCHCOL_SMALL 31
+#define CHARGE_SIZE_BIG 13
+#define CHARGE_SIZE_SMALL 6
+
 typedef enum Mode {
   capacity,
   power,
@@ -71,3 +80,5 @@ extern Flags flags;
 extern DrawState state;
 
 bool bat_eq(Battery *bat1, Battery *bat2);
+
+void define_position(int w, int h);

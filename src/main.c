@@ -114,24 +114,24 @@ int main(int argc, char **argv) {
   atexit(cleanup);
   setup();
 
-  bat_status(flags.fetch);
-  print_battery(true);
+  struct winsize w;
+  ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+  define_position(w.ws_col, w.ws_row);
 
-  const struct winsize w;
+  bat_status(flags.fetch);
+  print_battery();
+
   Battery prev_bat = bat;
 
   if (flags.live) {
     pthread_t thread;
     pthread_create(&thread, NULL, event_loop, NULL);
 
+    bool should_print = false;
     while (true) {
-      bool should_print = false;
-      bool should_redefine = false;
-      if (flags.fetch && bat_eq(&bat, &prev_bat)) {
+      if (flags.fetch && !bat_eq(&bat, &prev_bat)) {
         should_print = true;
-      }
-
-      if (!flags.small || flags.digits) {
+      } else if (!flags.small || flags.digits) {
         if (flags.mode == temp && prev_bat.temp != bat.temp) {
           should_print = true;
         } else if (flags.mode == power && prev_bat.power != bat.power) {
@@ -148,13 +148,14 @@ int main(int argc, char **argv) {
 
       ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
       if (w.ws_row != state.term_rows || w.ws_col != state.term_cols) {
+        define_position(w.ws_col, w.ws_row);
         state.redraw = true;
         should_print = true;
-        should_redefine = true;
       }
 
       if (should_print) {
-        print_battery(should_redefine);
+        print_battery();
+        should_print = false;
       }
 
       loop_sleep();
