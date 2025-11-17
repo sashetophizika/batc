@@ -75,11 +75,14 @@ static char *get_cursor_position(void) {
 }
 
 void define_position(int w, int h) {
-
   state.term_rows = h;
   state.term_cols = w;
 
-  if (flags.inlin || flags.fetch) {
+  if (flags.small) {
+    state.start_row = (state.term_rows - BAT_HEIGHT) / 2;
+    state.start_col = (state.term_cols - BAT_WIDTH) / 2;
+
+  } else if (flags.inlin || flags.fetch) {
     char *pos = get_cursor_position();
     state.start_row = atoi(pos) + 1;
     free(pos);
