@@ -53,18 +53,36 @@ static void color_to_ansi(char *color, const char **elem) {
 }
 
 #define set_to(m)                                                              \
-  if (c == #m[0])                                                              \
+  if (eq(#m, mode)) {                                                          \
     flags.mode = m;                                                            \
-  return
+  }
 
-void set_mode(char c) {
+void trim(char *s) {
+  int i = 0;
+  while (s[i] != '\0') {
+    if (s[i + 1] == '\n') {
+      s[i + 1] = '\0';
+    }
+    i++;
+  }
+}
+
+void set_mode(char *mode) {
+  trim(mode);
   set_to(capacity);
   set_to(temp);
   set_to(power);
   set_to(health);
+  set_to(times);
+  set_to(charge);
 }
 
-void set_bat_number(char num) {
+void set_bat_number(char *bat_num) {
+  if (bat_num == NULL) {
+    return;
+  }
+
+  char num = bat_num[0];
   char buffer[50];
   sprintf(buffer, "/sys/class/power_supply/BAT%c", num);
   DIR *power_supply_dir = opendir(buffer);
@@ -131,10 +149,10 @@ void parse_flags(int argc, char **argv) {
       toggle(flags.extra_colors);
       break;
     case 'M':
-      set_mode(optarg[0]);
+      set_mode(optarg);
       break;
     case 'b': {
-      set_bat_number(optarg[0]);
+      set_bat_number(optarg);
     } break;
     case 'h':
       print_help();
@@ -174,7 +192,7 @@ FILE *get_config(void) {
 
 #define parse_flag_arg(f)                                                      \
   if (eq(key, #f)) {                                                           \
-    set_##f(val[0]);                                                           \
+    set_##f(val);                                                              \
     continue;                                                                  \
   }
 
