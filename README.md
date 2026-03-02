@@ -30,6 +30,7 @@ sudo make install # system installation
 $ batc [OPTIONS]
 ``` 
 ### Options:
+All flags toggle the corresponding config values.
 
 * **-l, --live**: monitor the battery live (close with `q` or `Esc`)
 * **-i, --inline**: print the battery inline instead of the center of the screen
@@ -39,7 +40,7 @@ $ batc [OPTIONS]
 * **-F, --fetch**: adds extra information beside the battery
 * **-d, --digits**: print the current capacity as a number inside of the battery (does not work with -s)
 * **-M, --mode=(mode)**: specify what to be printed with -d (capacity, temp, power, times, health, charge)
-* **-e, --extra-colors**: disable extra core color pattern for different modes
+* **-e, --extra-colors**: toggle extra core colors for different modes
 * **-c, --alt-charge**: use an alternate charging symbol (requires nerd fonts)
 * **-m, --minimal**: print minimal text output
 * **-n, --no-color**: disable colors
@@ -53,7 +54,9 @@ In live mode you can use some keybinds.
 * **e**: toggle extra_colors
 * **f**: toggle fat
 * **c**: toggle alt_charge
-* **m**: cycle mode
+* **m**: cycle mode forward
+* **M**: cycle mode backward
+* **p**: switch between power/times and health/charge modes
 * **1**: capacity mode
 * **2**: temp mode
 * **3**: power mode
@@ -63,7 +66,7 @@ In live mode you can use some keybinds.
 
 ## Configuration
 
-You can create a file named `~/.config/batc/batc.conf` or `~/.config/batc/config` in order to change the colors and the default flags (the flags then become toggles that do the opposite).
+You can create a file named `~/.config/batc/batc.conf` or `~/.config/batc/config` in order to change the colors and the default flags.
 
 ### Default configuration:
 
@@ -76,10 +79,10 @@ color_high = green   # core color between 60-100%
 color_mid = yellow   # core color between 20-60%
 color_low = red      # core color between 0-20%
 
-color_temp = magenta # core color in 't' mode
-color_in = cyan      # core color in 'p' mode when charging
-color_draw = blue    # core color in 'p' mode when discharging
-color_health = red   # core color in 'h' mode
+color_temp = magenta # core color in 'temp' mode
+color_full = cyan    # core color in 'power/times' mode when charging
+color_left = blue    # core color in 'power/times' mode when discharging
+color_health = red   # core color in 'health/charge' mode
 
 color_shell = white  # color of the outer shell
 color_charge = cyan  # color of the charging symbol
@@ -104,4 +107,5 @@ tech = false
 digits = false
 fat = false
 alt_charge = false
+extra_colors = true
 ```
