@@ -12,8 +12,9 @@ inline static int max(int a, int b) { return a > b ? a : b; }
 inline static int min(int a, int b) { return a < b ? a : b; }
 
 static char *bat_name(char *batfile) {
-  char *tempstr = calloc(strlen(batfile) + 1, sizeof(char));
-  strncpy(tempstr, batfile, strlen(batfile) + 1);
+  size_t batfile_len = strlen(batfile);
+  char *tempstr = calloc(batfile_len + 1, sizeof(char));
+  strncpy(tempstr, batfile, batfile_len);
 
   char *name = strtok(tempstr, "/");
   char *temp = name;

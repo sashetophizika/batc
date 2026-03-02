@@ -1,4 +1,5 @@
 #include <dirent.h>
+#include <limits.h>
 #include <pthread.h>
 #include <signal.h>
 #include <stdio.h>
@@ -70,15 +71,15 @@ static void setup(void) {
       }
     }
 
-    char buffer[50];
-    snprintf(buffer, 50, "/sys/class/power_supply/BAT%c", bat_index);
+    char buffer[PATH_MAX];
+    snprintf(buffer, sizeof(buffer), "/sys/class/power_supply/BAT%c", bat_index);
     if (opendir(buffer) == NULL) {
       printf("No battery found.");
       closedir(power_supply_dir);
       exit(1);
     }
 
-    strncpy(flags.bat_number, buffer, 50);
+    snprintf(flags.bat_number, sizeof(flags.bat_number), "%s", buffer);
     closedir(power_supply_dir);
   }
 }

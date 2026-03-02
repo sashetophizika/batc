@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "state.h"
 #include "status.h"
@@ -11,12 +12,12 @@ inline static int min(int a, int b) { return a < b ? a : b; }
 static char *get_param(const char *param) {
   char *line = NULL;
   size_t len = 0;
-  char fn[100];
-  snprintf(fn, 100, "%s/%s", flags.bat_number, param);
+  char fn[PATH_MAX];
+  snprintf(fn, sizeof(fn), "%s/%s", flags.bat_number, param);
 
 #ifdef DEBUG
   if (!strcmp(param, "capacity"))
-    strcpy(fn, "./debug/capacity");
+    snprintf(fn, sizeof(fn), "./debug/capacity");
 #endif
 
   if (access(fn, F_OK)) {

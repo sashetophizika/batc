@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <getopt.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -83,14 +84,14 @@ void set_bat_number(char *bat_num) {
   }
 
   char num = bat_num[0];
-  char buffer[50];
-  sprintf(buffer, "/sys/class/power_supply/BAT%c", num);
+  char buffer[PATH_MAX];
+  snprintf(buffer, sizeof(buffer), "/sys/class/power_supply/BAT%c", num);
   DIR *power_supply_dir = opendir(buffer);
   if (power_supply_dir == NULL) {
     printf("%s does not exist.\n", buffer);
     exit(1);
   }
-  strcpy(flags.bat_number, buffer);
+  snprintf(flags.bat_number, sizeof(flags.bat_number), "%s", buffer);
   closedir(power_supply_dir);
 }
 
@@ -113,7 +114,7 @@ void parse_flags(int argc, char **argv) {
 
   char opt = 0;
   while (opt != -1) {
-    opt = getopt_long(argc, argv, ":hnlmtM:csidfFb:", long_options, NULL);
+    opt = getopt_long(argc, argv, ":hnelmtM:csidfFb:", long_options, NULL);
     switch (opt) {
     case 'n':
       toggle(flags.colors);
@@ -147,6 +148,7 @@ void parse_flags(int argc, char **argv) {
       break;
     case 'e':
       toggle(flags.extra_colors);
+      printf("%d", flags.extra_colors);;
       break;
     case 'M':
       set_mode(optarg);
@@ -167,10 +169,10 @@ FILE *get_config(void) {
     return NULL;
   }
 
-  char config_file[100];
-  snprintf(config_file, 100, "%s/.config/batc/batc.conf", home);
+  char config_file[PATH_MAX];
+  snprintf(config_file, sizeof(config_file), "%s/.config/batc/batc.conf", home);
   if (access(config_file, F_OK)) {
-    snprintf(config_file, 100, "%s/.config/batc/config", home);
+    snprintf(config_file, sizeof(config_file), "%s/.config/batc/config", home);
     if (access(config_file, F_OK)) {
       return NULL;
     }
@@ -203,7 +205,9 @@ void parse_config(void) {
   }
 
   size_t len = 0;
-  char *line, *key, *val = NULL;
+  char *line = NULL;
+  char *key = NULL;
+  char *val = NULL;
 
   while (getline(&line, &len, config) != -1) {
     key = strtok(line, " =");
@@ -245,7 +249,5 @@ void parse_config(void) {
   }
 
   fclose(config);
-  if (line) {
-    free(line);
-  }
+  free(line);
 }
