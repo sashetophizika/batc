@@ -4,7 +4,6 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/ioctl.h>
 #include <termios.h>
 #include <unistd.h>
@@ -14,6 +13,8 @@
 #include "print.h"
 #include "state.h"
 #include "status.h"
+
+static volatile bool resize_detected = false;
 
 static void cleanup(void) {
   struct termios term;
@@ -72,7 +73,8 @@ static void setup(void) {
     }
 
     char buffer[PATH_MAX];
-    snprintf(buffer, sizeof(buffer), "/sys/class/power_supply/BAT%c", bat_index);
+    snprintf(buffer, sizeof(buffer), "/sys/class/power_supply/BAT%c",
+             bat_index);
     if (opendir(buffer) == NULL) {
       printf("No battery found.");
       closedir(power_supply_dir);
@@ -94,6 +96,8 @@ static void loop_sleep(void) {
 
 static void sig_exit(int legolas) { exit(0); }
 
+static void sig_winch(int legolas) { resize_detected = true; }
+
 int main(int argc, char **argv) {
   parse_config();
   parse_flags(argc, argv);
@@ -111,6 +115,9 @@ int main(int argc, char **argv) {
   sigaction(SIGINT, &sa, NULL);
   sigaction(SIGKILL, &sa, NULL);
   sigaction(SIGTERM, &sa, NULL);
+
+  sa.sa_handler = sig_winch;
+  sigaction(SIGWINCH, &sa, NULL);
 
   atexit(cleanup);
   setup();
@@ -147,11 +154,14 @@ int main(int argc, char **argv) {
         should_print = true;
       }
 
-      ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
-      if (w.ws_row != state.term_rows || w.ws_col != state.term_cols) {
-        define_position(w.ws_col, w.ws_row);
-        state.redraw = true;
-        should_print = true;
+      if (resize_detected) {
+        ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+        if (w.ws_row != state.term_rows || w.ws_col != state.term_cols) {
+          define_position(w.ws_col, w.ws_row);
+          state.redraw = true;
+          should_print = true;
+        }
+        resize_detected = false;
       }
 
       if (should_print) {
