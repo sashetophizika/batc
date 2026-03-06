@@ -139,18 +139,16 @@ int main(int argc, char **argv) {
     while (true) {
       if (flags.fetch && !bat_eq(&bat, &prev_bat)) {
         should_print = true;
-      } else if (!flags.small || flags.digits) {
+      } else if (!flags.small && flags.digits) {
         if (flags.mode == temp && prev_bat.temp != bat.temp) {
           should_print = true;
         } else if (flags.mode == power && prev_bat.power != bat.power) {
           should_print = true;
-        } else if (flags.mode == health && prev_bat.health != bat.health) {
+        } else if (flags.mode == times && prev_bat.times != bat.times) {
           should_print = true;
         }
-      }
-
-      if (prev_bat.capacity != bat.capacity ||
-          prev_bat.is_charging != bat.is_charging) {
+      } else if (prev_bat.capacity != bat.capacity ||
+                 prev_bat.is_charging != bat.is_charging) {
         should_print = true;
       }
 
